@@ -745,6 +745,7 @@ BR.forEach(b=>{DATA[b.id]={r26:REAL26[b.id]||simR(b.id,'a'),r25:REAL25[b.id]||si
 const DAILY={};
 const D1R={};
 const DAILY_EXTRA={}; // key = "YYYY-MM-DD_brId" e.g. "2026-04-24_cpr9"
+const DAILY_CARS={};  // key = "YYYY-MM-DD_brId" — จำนวนรถรายวัน
 function getDR(d,id){
   // Build full date key from current period context
   const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
@@ -921,7 +922,16 @@ function initForUser(){
   if(CU.role==='admin') renderUsers();
 }
 
-// ── SIDEBAR FILTERS ──
+// Lock selBr based on role — call this after any data load
+function lockSelBr(){
+  if(!CU) return;
+  if(CU.role==='branch'){
+    selBr=new Set([CU.scope]);
+  } else if(CU.role==='supervisor'){
+    selBr=new Set(BR.filter(b=>b.sup===CU.scope).map(b=>b.id));
+  }
+  // admin: don't touch selBr (user may have custom selection)
+}
 // Track active filters for bc-list
 let activeBrand='all', activeRegion='all', activeSup='all';
 
@@ -994,7 +1004,11 @@ function applyPeriod(){
     const dv=document.getElementById('dp-date').value;
     if(!dv) return;
     const dt=new Date(dv);
-    CY=dt.getFullYear(); periodDays=[dt.getDate()];
+    CY=dt.getFullYear();
+    periodDays=[dt.getDate()];
+    // Sync dp-m so getPeriodRevenue reads correct month
+    document.getElementById('dp-m').value=String(dt.getMonth()+1);
+    document.getElementById('dp-y').value=String(dt.getFullYear());
     periodLabel=dt.getDate()+' '+mN[dt.getMonth()]+' '+CY;
   } else if(mode==='week'){
     const from=document.getElementById('dp-from')?.value;
@@ -1008,7 +1022,11 @@ function applyPeriod(){
       if(d.getMonth()===fd.getMonth()&&d.getFullYear()===CY) days.push(d.getDate());
     }
     periodDays=days.length>0?days:[fd.getDate()];
-    periodLabel=`${fd.getDate()} - ${td.getDate()} ${mN[fd.getMonth()]} ${CY}`;
+    // Sync dp-m so getPeriodRevenue reads correct month
+    document.getElementById('dp-m').value=String(fd.getMonth()+1);
+    document.getElementById('dp-y').value=String(fd.getFullYear());
+    const mN2=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    periodLabel=`${fd.getDate()} - ${td.getDate()} ${mN2[fd.getMonth()]} ${CY}`;
   } else if(mode==='year'){
     const yr=document.getElementById('dp-yr').value;
     CY=yr==='all'?'all':parseInt(yr);
@@ -1019,42 +1037,42 @@ function applyPeriod(){
   refresh();
 }
 function getPeriodRevenue(id){
-  const days=getPeriodDays();
+  const mode=document.getElementById('fPeriod')?.value||'month';
   const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  // For year mode: sum all months
+  if(mode==='year'){
+    return Object.keys(DAILY_EXTRA)
+      .filter(k=>k.startsWith(`${yr}-`)&&k.endsWith(`_${id}`))
+      .reduce((s,k)=>s+DAILY_EXTRA[k],0);
+  }
   const mEl=document.getElementById('dp-m');
   const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
-  // Sum only from DAILY_EXTRA (uploaded real data) — ไม่ใช้ข้อมูลจำลอง
-  const dailySum=days.reduce((s,d)=>{
+  const days=getPeriodDays();
+  return days.reduce((s,d)=>{
     const dd=String(d).padStart(2,'0');
     const key=`${yr}-${mm}-${dd}_${id}`;
     return s+(DAILY_EXTRA[key]||DAILY_EXTRA[`${d}_${id}`]||0);
   },0);
-  return dailySum;
 }
 
 // Count cars (เสร็จงาน) for the selected period from UPLOG
 function getPeriodCars(id){
+  const mode=document.getElementById('fPeriod')?.value||'month';
   const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  // year mode: sum all months
+  if(mode==='year'){
+    return Object.keys(DAILY_CARS)
+      .filter(k=>k.startsWith(`${yr}-`)&&k.endsWith(`_${id}`))
+      .reduce((s,k)=>s+DAILY_CARS[k],0);
+  }
   const mEl=document.getElementById('dp-m');
-  const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
-  const selDays=new Set(getPeriodDays().map(d=>String(d).padStart(2,'0')));
-  let total=0;
-  let hasMatch=false;
-  UPLOG.forEach(l=>{
-    if(l.brId!==id||!l.year||l.year!==yr||!l.date) return;
-    const logMm=l.date.slice(5,7);
-    if(logMm!==mm) return;
-    hasMatch=true;
-    if(periodDays.length>0&&l.dayRevMap){
-      const matchDays=Object.keys(l.dayRevMap).filter(k=>selDays.has(String(k.split('-')[1]).padStart(2,'0')));
-      const totalDays=Object.keys(l.dayRevMap).length||1;
-      total+=Math.round((l.cars||0)*matchDays.length/totalDays);
-    } else {
-      total+=l.cars||0;
-    }
-  });
-  if(!hasMatch) return 0;
-  return total;
+  const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+  const days=getPeriodDays();
+  return days.reduce((s,d)=>{
+    const dd=String(d).padStart(2,'0');
+    const key=`${yr}-${mm}-${dd}_${id}`;
+    return s+(DAILY_CARS[key]||0);
+  },0);
 }
 function getPeriodOrd(id){
   // Orders = same logic as cars for now (1 order per car)
@@ -1063,10 +1081,23 @@ function getPeriodOrd(id){
 function getPeriodDays(){
   return periodDays.length>0?periodDays:Array.from({length:31},(_,i)=>i+1);
 }
-function applyBrand(){activeBrand=document.getElementById('fBrand').value;const pool=getFilteredPool();selBr=new Set(pool.map(b=>b.id));buildBcList();refresh();}
-function applyRegion(){activeRegion=document.getElementById('fRegion').value;const pool=getFilteredPool();selBr=new Set(pool.map(b=>b.id));buildBcList();refresh();}
+function applyBrand(){
+  if(CU.role==='branch') return;
+  activeBrand=document.getElementById('fBrand').value;
+  const pool=getFilteredPool();
+  if(CU.role==='supervisor') selBr=new Set(pool.map(b=>b.id));
+  else selBr=new Set(pool.map(b=>b.id));
+  buildBcList();refresh();
+}
+function applyRegion(){
+  if(CU.role==='branch') return;
+  activeRegion=document.getElementById('fRegion').value;
+  const pool=getFilteredPool();
+  selBr=new Set(pool.map(b=>b.id));
+  buildBcList();refresh();
+}
 function applySup(){
-  if(CU.role==='branch') return; // branch is locked
+  if(CU.role==='branch'||CU.role==='supervisor') return; // locked
   activeSup=document.getElementById('fSup').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
@@ -1399,25 +1430,23 @@ function drawMenuOv(){
   const otherYr=curYr===2026?2025:2026;
 
   // Build cats filtered by period (year + month + selected days)
+  const mode=document.getElementById('fPeriod')?.value||'month';
   const mEl=document.getElementById('dp-m');
   const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
   const selDays=new Set(getPeriodDays().map(d=>String(d).padStart(2,'0')));
-  const allDays=selDays.size===0; // no specific days = whole month
+  const allDays=periodDays.length===0; // no specific days = whole month or year
 
   function buildCatsFromLog(yr){
     const cats={};
     UPLOG.forEach(l=>{
       if(l.year&&l.year!==yr) return;
-      // Filter by month
-      if(l.date&&l.date.slice(5,7)!==mm) return;
-      // If svcBreak has per-row data, use it; otherwise use the whole entry
-      // We approximate by checking if any dayRevMap day falls in selDays
+      // Filter by month (skip for year mode)
+      if(mode!=='year'&&l.date&&l.date.slice(5,7)!==mm) return;
+      // Filter by specific days if not whole month
       let include=true;
       if(!allDays&&l.dayRevMap){
-        include=Object.keys(l.dayRevMap).some(dateKey=>{
-          const dd=dateKey.slice(8,10); // YYYY-MM-DD -> DD
-          return selDays.has(dd);
-        });
+        // dayRevMap key = "YYYY-MM-DD", DD is at slice(8,10)
+        include=Object.keys(l.dayRevMap).some(dateKey=>selDays.has(dateKey.slice(8,10)));
       }
       if(!include) return;
       Object.entries(l.svcBreak||{}).forEach(([cat,d])=>{
@@ -1821,6 +1850,7 @@ function importData(){
   // service breakdown + group by full date YYYY-MM-DD
   const svcBreak={};
   const dayRevMap={};   // key = "YYYY-MM-DD" e.g. "2026-04-24"
+  const dayCarMap={};   // key = "YYYY-MM-DD" — นับรถรายวัน
   let detectedYear=null;
 
   completed.forEach(r=>{
@@ -1836,10 +1866,12 @@ function importData(){
       const dd=String(dt.day).padStart(2,'0');
       const key=`${dt.year}-${mm}-${dd}`;
       dayRevMap[key]=(dayRevMap[key]||0)+price;
+      dayCarMap[key]=(dayCarMap[key]||0)+1; // นับ 1 คัน/row
     } else {
       // fallback: use filename date
       if(fileDate){
         dayRevMap[fileDate]=(dayRevMap[fileDate]||0)+price;
+      dayCarMap[fileDate]=(dayCarMap[fileDate]||0)+1;
         if(!detectedYear) detectedYear=parseInt(fileDate.slice(0,4));
       }
     }
@@ -1872,7 +1904,14 @@ function importData(){
   const logDate=firstDate.slice(0,7)||`${yr}-??`; // YYYY-MM
   const ts=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'?';
-  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,year:yr});
+  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,year:yr});
+  // Store daily cars in DAILY_CARS
+  if(detectedBrId){
+    Object.entries(dayCarMap).forEach(([dateKey,cars])=>{
+      const ck=`${dateKey}_${detectedBrId}`;
+      DAILY_CARS[ck]=(DAILY_CARS[ck]||0)+cars;
+    });
+  }
   saveUploadLog(UPLOG[0]); // บันทึกลง Firebase
   renderUpLog();
 
@@ -1924,6 +1963,12 @@ function deleteUpload(i){
         const fullKey=`${dateKey}_${l.brId}`;
         DAILY_EXTRA[fullKey]=Math.max(0,(DAILY_EXTRA[fullKey]||0)-rev);
         if(DAILY_EXTRA[fullKey]===0) delete DAILY_EXTRA[fullKey];
+        // reverse daily cars too
+        if(l.dayCarMap&&l.dayCarMap[dateKey]){
+          const ck=`${dateKey}_${l.brId}`;
+          DAILY_CARS[ck]=Math.max(0,(DAILY_CARS[ck]||0)-l.dayCarMap[dateKey]);
+          if(DAILY_CARS[ck]===0) delete DAILY_CARS[ck];
+        }
       });
     } else if(l.day){
       const key=`${l.day}_${l.brId}`;
@@ -2114,6 +2159,7 @@ async function loadUploadLogs(){
     UPLOG.length=0;
     // Reset DATA and DAILY_EXTRA before restoring from Firebase
     Object.keys(DAILY_EXTRA).forEach(k=>delete DAILY_EXTRA[k]);
+    Object.keys(DAILY_CARS).forEach(k=>delete DAILY_CARS[k]);
     BR.forEach(b=>{DATA[b.id].r26=0;DATA[b.id].r25=0;DATA[b.id].o26=0;DATA[b.id].o25=0;DATA[b.id].cars26=0;});
     snap.forEach(doc=>{
       const d=doc.data();
@@ -2124,10 +2170,15 @@ async function loadUploadLogs(){
       // Restore DAILY_EXTRA
       if(d.dayRevMap&&d.brId){
         Object.entries(d.dayRevMap).forEach(([dateKey,rev])=>{
-          // dateKey format: "YYYY-MM-DD"
           const key=`${dateKey}_${d.brId}`;
           DAILY_EXTRA[key]=(DAILY_EXTRA[key]||0)+rev;
         });
+        if(d.dayCarMap){
+          Object.entries(d.dayCarMap).forEach(([dateKey,cars])=>{
+            const ck=`${dateKey}_${d.brId}`;
+            DAILY_CARS[ck]=(DAILY_CARS[ck]||0)+cars;
+          });
+        }
       }
       // Restore DATA totals
       if(d.brId&&DATA[d.brId]){
@@ -2272,8 +2323,8 @@ async function deleteUserFromDB(uid){
 async function loadAllData(){
   try{
     await Promise.all([loadBranchData(),loadUsersFromDB()]);
-    await loadUploadLogs(); // loadUploadLogs calls refresh() at the end
-    // loadBranchData โหลดแล้วแต่ต้อง refresh อีกครั้งเพื่อให้ UI อัปเดต
+    await loadUploadLogs();
+    lockSelBr(); // re-lock selBr หลัง load เสร็จ ป้องกัน filter overwrite
     loadTargetForPeriod();
     refreshOverviewOnly();
     if(document.getElementById('v-branches').classList.contains('on')) renderBranchTable();
