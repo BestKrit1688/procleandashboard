@@ -821,21 +821,26 @@ async function doLogin(){
   const errEl=document.getElementById('lerr');
   const btn=document.querySelector('.lbtn');
 
-  // ถ้า Firebase ยังโหลดไม่เสร็จ รอสักครู่
-  if(db&&!usersLoaded){
-    btn.textContent='กำลังโหลด...';btn.disabled=true;
-    for(let i=0;i<30;i++){
-      if(usersLoaded) break;
-      await new Promise(r=>setTimeout(r,200));
-    }
-    btn.textContent='เข้าสู่ระบบ';btn.disabled=false;
+  btn.textContent='กำลังโหลด...';btn.disabled=true;
+  errEl.textContent='';
+
+  // โหลด users จาก Firebase ใหม่ทุกครั้ง เพื่อให้ได้ user ล่าสุด
+  usersLoaded=false;
+  if(db){
+    await Promise.race([
+      loadUsersFromDB(),
+      new Promise(r=>setTimeout(()=>{usersLoaded=true;r()},6000)) // timeout 6s
+    ]);
+  } else {
+    usersLoaded=true;
   }
+
+  btn.textContent='เข้าสู่ระบบ';btn.disabled=false;
 
   const found=USERS.find(x=>x.username===u&&x.password===p)
     || LOCAL_USERS.find(x=>x.username===u&&x.password===p);
   if(!found){errEl.textContent='Username หรือ Password ไม่ถูกต้อง';return;}
   CU=found;
-  errEl.textContent='';
   document.getElementById('ls').classList.add('hide');
   document.getElementById('app').classList.add('show');
   initForUser();
@@ -2276,8 +2281,9 @@ async function loadAllData(){
 }
 
 // ── INIT ──
-// โหลด users จาก Firebase ทันทีที่หน้าเว็บเปิด (ไม่ต้องรอ login)
+// preload users เพื่อให้ doLogin เร็วขึ้น (ไม่บังคับ)
 if(typeof db!=='undefined'&&db) loadUsersFromDB();
+else usersLoaded=true;
 </script>
 <!-- MOBILE BOTTOM BAR -->
 <div id="mob-bar">
