@@ -144,6 +144,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
 /* badges */
 .bbadge{font-size:10px;padding:2px 6px;border-radius:9px;font-weight:500}
 .b-central{background:rgba(59,130,246,.15);color:#93c5fd}
+.b-robinson{background:rgba(244,63,94,.15);color:#fca5a5}
 .b-lotus{background:rgba(34,197,94,.12);color:#86efac}
 .b-bigc{background:rgba(239,68,68,.12);color:#fca5a5}
 .b-other{background:rgba(245,158,11,.12);color:#fcd34d}
@@ -308,7 +309,6 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
     </div>
     <button class="lbtn" onclick="doLogin()">เข้าสู่ระบบ</button>
     <div class="lerr" id="lerr"></div>
-    <div class="lhint">admin / admin123 &nbsp;·&nbsp; supbest / sup123<br>cla / branch123 &nbsp;·&nbsp; cpr9 / branch123</div>
   </div>
 </div>
 
@@ -369,7 +369,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
     <div class="fl" id="sf-brand"><label>แบรนด์</label>
       <select class="fsel" id="fBrand" onchange="applyBrand()">
         <option value="all">ทุกแบรนด์</option>
-        <option value="central">Central</option><option value="lotus">Lotus</option>
+        <option value="central">Central</option><option value="robinson">Robinson</option><option value="lotus">Lotus</option>
         <option value="bigc">Big C</option><option value="other">อื่นๆ</option>
       </select></div>
     <div class="fl" id="sf-region"><label>ภูมิภาค</label>
@@ -511,6 +511,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
       <div class="rtabs" id="br-tabs">
         <button class="rtab on" onclick="setBT('all',this)">ทั้งหมด</button>
         <button class="rtab" onclick="setBT('central',this)">Central</button>
+        <button class="rtab" onclick="setBT('robinson',this)">Robinson</button>
         <button class="rtab" onclick="setBT('lotus',this)">Lotus</button>
         <button class="rtab" onclick="setBT('bigc',this)">Big C</button>
         <button class="rtab" onclick="setBT('other',this)">อื่นๆ</button>
@@ -677,19 +678,19 @@ const BR = [
   {id:'ctnp',name:'เซ็นทรัลนครปฐม',sup:'Sup Da',brand:'central',region:'central_region'},
   {id:'cdst',name:'เซ็นทรัลพาร์ค',sup:'Sup Best',brand:'central',region:'bkk'},
   {id:'cdst2',name:'เซ็นทรัลพาร์ค 2',sup:'Sup Best',brand:'central',region:'bkk'},
-  {id:'rta',name:'โรบินสันตรัง',sup:'K Bank',brand:'other',region:'south'},
-  {id:'rsp',name:'โรบินสันสุพรรณบุรี',sup:'Sup Da',brand:'other',region:'central_region'},
-  {id:'rkb',name:'โรบินสันกาญจนบุรี',sup:'Sup Da',brand:'other',region:'central_region'},
-  {id:'rsk',name:'โรบินสันสกลนคร',sup:'Sup Best',brand:'other',region:'northeast'},
-  {id:'rsb',name:'โรบินสันสระบุรี',sup:'Sup Per',brand:'other',region:'central_region'},
-  {id:'rar',name:'โรบินสันสุรินทร์',sup:'Sup Per',brand:'other',region:'northeast'},
-  {id:'mcs',name:'โรบินสันฉะเชิงเทรา',sup:'Sup Poo',brand:'other',region:'east'},
-  {id:'rret',name:'โรบินสันร้อยเอ็ด',sup:'Sup Best',brand:'other',region:'northeast'},
-  {id:'smp',name:'โรบินสันสมุทรปราการ',sup:'Sup Poo',brand:'other',region:'bkk'},
-  {id:'rpcb',name:'โรบินสันปราจีนบุรี',sup:'Sup Poo',brand:'other',region:'east'},
-  {id:'mbh',name:'โรบินสันมุกดาหาร',sup:'Sup Best',brand:'other',region:'northeast'},
-  {id:'rbrr',name:'โรบินสันบุรีรัมย์',sup:'Sup Per',brand:'other',region:'northeast'},
-  {id:'rlkb',name:'โรบินสันลาดกระบัง',sup:'Sup Poo',brand:'other',region:'bkk'},
+  {id:'rta',name:'โรบินสันตรัง',sup:'K Bank',brand:'robinson',region:'south'},
+  {id:'rsp',name:'โรบินสันสุพรรณบุรี',sup:'Sup Da',brand:'robinson',region:'central_region'},
+  {id:'rkb',name:'โรบินสันกาญจนบุรี',sup:'Sup Da',brand:'robinson',region:'central_region'},
+  {id:'rsk',name:'โรบินสันสกลนคร',sup:'Sup Best',brand:'robinson',region:'northeast'},
+  {id:'rsb',name:'โรบินสันสระบุรี',sup:'Sup Per',brand:'robinson',region:'central_region'},
+  {id:'rar',name:'โรบินสันสุรินทร์',sup:'Sup Per',brand:'robinson',region:'northeast'},
+  {id:'mcs',name:'โรบินสันฉะเชิงเทรา',sup:'Sup Poo',brand:'robinson',region:'east'},
+  {id:'rret',name:'โรบินสันร้อยเอ็ด',sup:'Sup Best',brand:'robinson',region:'northeast'},
+  {id:'smp',name:'โรบินสันสมุทรปราการ',sup:'Sup Poo',brand:'robinson',region:'bkk'},
+  {id:'rpcb',name:'โรบินสันปราจีนบุรี',sup:'Sup Poo',brand:'robinson',region:'east'},
+  {id:'mbh',name:'โรบินสันมุกดาหาร',sup:'Sup Best',brand:'robinson',region:'northeast'},
+  {id:'rbrr',name:'โรบินสันบุรีรัมย์',sup:'Sup Per',brand:'robinson',region:'northeast'},
+  {id:'rlkb',name:'โรบินสันลาดกระบัง',sup:'Sup Poo',brand:'robinson',region:'bkk'},
   {id:'ub',name:'โลตัสอุบลราชธานี',sup:'Sup Per',brand:'lotus',region:'northeast'},
   {id:'lsn',name:'โลตัสสุราษฎร์ธานี',sup:'K Bank',brand:'lotus',region:'south'},
   {id:'lrs',name:'โลตัสรังสิต',sup:'Sup Da',brand:'lotus',region:'bkk'},
@@ -727,8 +728,8 @@ function detectBranchFromSheet(sheetName){
 
 const SUPS = ['K Bank','Lead Met','Lead Top','Sup Best','Sup Da','Sup Per','Sup Poo','Sup Wut'];
 const SUP_COL = {'K Bank':'#14b8a6','Lead Met':'#a855f7','Lead Top':'#f59e0b','Sup Best':'#3b82f6','Sup Da':'#22c55e','Sup Per':'#ef4444','Sup Poo':'#f97316','Sup Wut':'#8b5cf6'};
-const BC = {central:'#3b82f6',lotus:'#22c55e',bigc:'#ef4444',other:'#f59e0b'};
-const BL = {central:'Central',lotus:'Lotus',bigc:'Big C',other:'อื่นๆ'};
+const BC = {central:'#3b82f6',robinson:'#f43f5e',lotus:'#22c55e',bigc:'#ef4444',other:'#f59e0b'};
+const BL = {central:'Central',robinson:'Robinson',lotus:'Lotus',bigc:'Big C',other:'อื่นๆ'};
 const RL = {bkk:'กรุงเทพฯ',central_region:'ภาคกลาง',north:'เหนือ',northeast:'อีสาน',south:'ใต้',east:'ตะวันออก'};
 
 // ── Revenue data ──
@@ -780,17 +781,8 @@ const PDEF={admin:PERMS,supervisor:['overview','daily','branches','upload'],bran
 // ── USER DB ──
 let USERS=[
   {uid:'u1',username:'admin',password:'admin123',name:'Admin HQ',role:'admin',scope:null,perms:[...PERMS]},
-  {uid:'u2',username:'supbest',password:'sup123',name:'Sup Best',role:'supervisor',scope:'Sup Best',perms:['overview','daily','branches','upload']},
-  {uid:'u3',username:'supda',password:'sup123',name:'Sup Da',role:'supervisor',scope:'Sup Da',perms:['overview','daily','branches','upload']},
-  {uid:'u4',username:'suppoo',password:'sup123',name:'Sup Poo',role:'supervisor',scope:'Sup Poo',perms:['overview','daily','branches','upload']},
-  {uid:'u5',username:'supwut',password:'sup123',name:'Sup Wut',role:'supervisor',scope:'Sup Wut',perms:['overview','daily','branches','upload']},
-  {uid:'u6',username:'suppur',password:'sup123',name:'Sup Per',role:'supervisor',scope:'Sup Per',perms:['overview','daily','branches','upload']},
-  {uid:'u7',username:'kbank',password:'sup123',name:'K Bank',role:'supervisor',scope:'K Bank',perms:['overview','daily','branches','upload']},
-  {uid:'u8',username:'cla',password:'branch123',name:'สาขา ลาดพร้าว',role:'branch',scope:'cla',perms:['overview','daily','upload']},
-  {uid:'u9',username:'cpr9',password:'branch123',name:'สาขา พระราม9',role:'branch',scope:'cpr9',perms:['overview','daily','upload']},
-  {uid:'u10',username:'cud',password:'branch123',name:'สาขา อุดรฯ',role:'branch',scope:'cud',perms:['overview','daily','upload']},
 ];
-let nextUid=11;
+let nextUid=2;
 let CU=null; // current user
 
 // ── STATE ──
@@ -1984,9 +1976,21 @@ function saveUser(){
   if(!username||!name){document.getElementById('merr').textContent='กรุณากรอก Username และชื่อ';return;}
   if(!uid&&!pass){document.getElementById('merr').textContent='กรุณากรอก Password';return;}
   if(!uid&&USERS.find(u=>u.username===username)){document.getElementById('merr').textContent='Username นี้มีอยู่แล้ว';return;}
-  if(uid){const i=USERS.findIndex(u=>u.uid===uid);if(i>=0){USERS[i]={...USERS[i],username,name,role,scope,perms};if(pass)USERS[i].password=pass;}}
-  else USERS.push({uid:'u'+String(nextUid++).padStart(3,'0'),username,password:pass,name,role,scope,perms});
-  closeModal();saveUserToDB(uid?USERS.find(u=>u.uid===uid):USERS[USERS.length-1]);renderUsers();
+  let savedUser;
+  if(uid){
+    const i=USERS.findIndex(u=>u.uid===uid);
+    if(i>=0){
+      USERS[i]={...USERS[i],username,name,role,scope,perms};
+      if(pass) USERS[i].password=pass;
+      savedUser=USERS[i];
+    }
+  } else {
+    savedUser={uid:'u'+String(nextUid++).padStart(3,'0'),username,password:pass,name,role,scope,perms};
+    USERS.push(savedUser);
+  }
+  closeModal();
+  if(savedUser) saveUserToDB(savedUser); // บันทึกลง Firebase
+  renderUsers();
 }
 function delUser(uid){if(!confirm('ยืนยันลบ?'))return;USERS=USERS.filter(u=>u.uid!==uid);deleteUserFromDB(uid);renderUsers();}
 
