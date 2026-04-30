@@ -1015,14 +1015,16 @@ function applyPeriod(){
 }
 function getPeriodRevenue(id){
   const days=getPeriodDays();
-  const dailySum=days.reduce((s,d)=>s+getDR(d,id),0);
-  if(periodDays.length>0) return dailySum;
-  const dataTotal=getRev(id);
   const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
   const mEl=document.getElementById('dp-m');
-  const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
-  const hasExtra=Object.keys(DAILY_EXTRA).some(k=>k.startsWith(`${yr}-${mm}-`)&&k.endsWith(`_${id}`));
-  return hasExtra?dailySum:dataTotal;
+  const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+  // Sum only from DAILY_EXTRA (uploaded real data) — ไม่ใช้ข้อมูลจำลอง
+  const dailySum=days.reduce((s,d)=>{
+    const dd=String(d).padStart(2,'0');
+    const key=`${yr}-${mm}-${dd}_${id}`;
+    return s+(DAILY_EXTRA[key]||DAILY_EXTRA[`${d}_${id}`]||0);
+  },0);
+  return dailySum;
 }
 
 // Count cars (เสร็จงาน) for the selected period from UPLOG
@@ -1391,12 +1393,28 @@ function drawMenuOv(){
   const curYr=CY==='all'?2026:(CY||2026);
   const otherYr=curYr===2026?2025:2026;
 
-  // Build cats per year from UPLOG
+  // Build cats filtered by period (year + month + selected days)
+  const mEl=document.getElementById('dp-m');
+  const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+  const selDays=new Set(getPeriodDays().map(d=>String(d).padStart(2,'0')));
+  const allDays=selDays.size===0; // no specific days = whole month
+
   function buildCatsFromLog(yr){
     const cats={};
     UPLOG.forEach(l=>{
-      if(l.year&&l.year!==yr) return; // filter by year if available
-      // If no year on log entry, include it (legacy)
+      if(l.year&&l.year!==yr) return;
+      // Filter by month
+      if(l.date&&l.date.slice(5,7)!==mm) return;
+      // If svcBreak has per-row data, use it; otherwise use the whole entry
+      // We approximate by checking if any dayRevMap day falls in selDays
+      let include=true;
+      if(!allDays&&l.dayRevMap){
+        include=Object.keys(l.dayRevMap).some(dateKey=>{
+          const dd=dateKey.slice(8,10); // YYYY-MM-DD -> DD
+          return selDays.has(dd);
+        });
+      }
+      if(!include) return;
       Object.entries(l.svcBreak||{}).forEach(([cat,d])=>{
         if(!cats[cat]) cats[cat]={cat,rev:0,ord:0};
         cats[cat].rev+=d.rev;
@@ -1664,22 +1682,21 @@ function renderBranchTable(){
     refreshOverviewOnly();
     updateBrSummary(sel);
   };
-  // Save to Firebase when field loses focus
-  tbody.onblur=function(e){
+  // Save to Firebase when field loses focus (focusout bubbles, onblur does not)
+  tbody.addEventListener('focusout', function(e){
     const inp=e.target;
     const id=inp.dataset.id;
     if(id&&(inp.classList.contains('br-labor')||inp.classList.contains('br-rent')||inp.classList.contains('br-tgt'))){
       saveBranchDataToDB(id);
     }
-  };
-  // Supervisor change (select element fires 'change' not 'input')
+  });
+  // Supervisor change
   tbody.onchange=function(e){
     const sel2=e.target;
     const id=sel2.dataset.id;
     if(!id||!sel2.classList.contains('br-sup')) return;
-    const newSup=sel2.value;
     const branch=BR.find(b=>b.id===id);
-    if(branch) branch.sup=newSup;
+    if(branch) branch.sup=sel2.value;
     saveBranchDataToDB(id);
     drawSupChart();
   };
@@ -1796,9 +1813,9 @@ function importData(){
     return null;
   }
 
-  // service breakdown + group by year+day
+  // service breakdown + group by full date YYYY-MM-DD
   const svcBreak={};
-  const dayRevMap={};   // key = "YYYY-DD" e.g. "2025-12"
+  const dayRevMap={};   // key = "YYYY-MM-DD" e.g. "2026-04-24"
   let detectedYear=null;
 
   completed.forEach(r=>{
@@ -1809,16 +1826,16 @@ function importData(){
     const dt=parseDateFromRow(r);
     if(dt){
       if(!detectedYear) detectedYear=dt.year;
-      const key=`${dt.year}-${dt.day}`;
+      // key = YYYY-MM-DD (full date from actual row data)
+      const mm=String(dt.month).padStart(2,'0');
+      const dd=String(dt.day).padStart(2,'0');
+      const key=`${dt.year}-${mm}-${dd}`;
       dayRevMap[key]=(dayRevMap[key]||0)+price;
     } else {
-      // fallback: use filename date year
-      const fbDay=fileDate?parseInt(fileDate.split('-')[2]):null;
-      const fbYear=fileDate?parseInt(fileDate.split('-')[0]):new Date().getFullYear();
-      if(fbDay){
-        const key=`${fbYear}-${fbDay}`;
-        dayRevMap[key]=(dayRevMap[key]||0)+price;
-        if(!detectedYear) detectedYear=fbYear;
+      // fallback: use filename date
+      if(fileDate){
+        dayRevMap[fileDate]=(dayRevMap[fileDate]||0)+price;
+        if(!detectedYear) detectedYear=parseInt(fileDate.slice(0,4));
       }
     }
   });
@@ -1828,14 +1845,9 @@ function importData(){
 
   // Update DAILY_EXTRA per day with full date key YYYY-MM-DD_brId
   if(detectedBrId){
-    Object.entries(dayRevMap).forEach(([yrDay,rev])=>{
-      // yrDay format: "YYYY-DD" — reconstruct full key
-      const parts=yrDay.split('-');
-      const rowYr=parts[0];
-      const rowDay=parts[1].padStart(2,'0');
-      // Get month from first matching row or fileDate
-      const rowMonth=fileDate?fileDate.slice(5,7):'01';
-      const fullKey=`${rowYr}-${rowMonth}-${rowDay}_${detectedBrId}`;
+    Object.entries(dayRevMap).forEach(([dateKey,rev])=>{
+      // dateKey format: "YYYY-MM-DD" (full date from row)
+      const fullKey=`${dateKey}_${detectedBrId}`;
       DAILY_EXTRA[fullKey]=(DAILY_EXTRA[fullKey]||0)+rev;
     });
     // Store to correct year
@@ -1850,7 +1862,9 @@ function importData(){
   }
 
   const daysFound=[...new Set(Object.keys(dayRevMap))].length;
-  const logDate=yr+'-'+(fileDate?fileDate.slice(5,7):'??')+'-??';
+  // Use first date from dayRevMap for display, fallback to fileDate
+  const firstDate=Object.keys(dayRevMap).sort()[0]||fileDate||'';
+  const logDate=firstDate.slice(0,7)||`${yr}-??`; // YYYY-MM
   const ts=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'?';
   UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,year:yr});
@@ -1900,11 +1914,9 @@ function deleteUpload(i){
   const l=UPLOG[i];if(!l)return;
   if(l.brId){
     if(l.dayRevMap){
-      const month=l.date?l.date.slice(5,7):'01';
-      Object.entries(l.dayRevMap).forEach(([yrDay,rev])=>{
-        const parts=yrDay.split('-');
-        const rowYr=parts[0]; const rowDay=parts[1].padStart(2,'0');
-        const fullKey=`${rowYr}-${month}-${rowDay}_${l.brId}`;
+      Object.entries(l.dayRevMap).forEach(([dateKey,rev])=>{
+        // dateKey format: "YYYY-MM-DD"
+        const fullKey=`${dateKey}_${l.brId}`;
         DAILY_EXTRA[fullKey]=Math.max(0,(DAILY_EXTRA[fullKey]||0)-rev);
         if(DAILY_EXTRA[fullKey]===0) delete DAILY_EXTRA[fullKey];
       });
@@ -2096,12 +2108,9 @@ async function loadUploadLogs(){
       UPLOG.push({...d,_docId:doc.id});
       // Restore DAILY_EXTRA
       if(d.dayRevMap&&d.brId){
-        const month=d.date?d.date.slice(5,7):'01';
-        Object.entries(d.dayRevMap).forEach(([yrDay,rev])=>{
-          const parts=yrDay.split('-');
-          const rowYr=parts[0];
-          const rowDay=String(parts[1]).padStart(2,'0');
-          const key=`${rowYr}-${month}-${rowDay}_${d.brId}`;
+        Object.entries(d.dayRevMap).forEach(([dateKey,rev])=>{
+          // dateKey format: "YYYY-MM-DD"
+          const key=`${dateKey}_${d.brId}`;
           DAILY_EXTRA[key]=(DAILY_EXTRA[key]||0)+rev;
         });
       }
@@ -2181,20 +2190,22 @@ function loadTargetForPeriod(){
 async function saveBranchDataToDB(id){
   if(!db) return;
   try{
-    // เป้าบันทึกแยกตามปี+เดือน เช่น targets.2026_04 = 500000
     const mEl=document.getElementById('dp-m');
     const yEl=document.getElementById('dp-y');
     const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
     const yy=yEl?yEl.value:String(new Date().getFullYear());
-    const targetKey=`targets.${yy}_${mm}`;
     const branch=BR.find(b=>b.id===id);
-    await db.collection('branch_data').doc(id).set({
+    const ref=db.collection('branch_data').doc(id);
+    // Step 1: save cost + sup (always overwrite)
+    await ref.set({
       labor:COST[id]?.labor||0,
       rent:COST[id]?.rent||0,
-      [targetKey]:branchTargets[id]||0,  // เป้าแยกปี+เดือน
-      sup:branch?.sup||'',               // ผู้ดูแล
+      sup:branch?.sup||'',
       updatedAt:new Date().toISOString()
     },{merge:true});
+    // Step 2: save target for this month using dot notation (merge keeps other months)
+    const targetField=`targets.${yy}_${mm}`;
+    await ref.update({[targetField]:branchTargets[id]||0});
   }catch(e){console.error('saveBranchDataToDB:',e);}
 }
 
@@ -2244,7 +2255,11 @@ async function deleteUserFromDB(uid){
 async function loadAllData(){
   try{
     await Promise.all([loadBranchData(),loadUsersFromDB()]);
-    await loadUploadLogs();
+    await loadUploadLogs(); // loadUploadLogs calls refresh() at the end
+    // loadBranchData โหลดแล้วแต่ต้อง refresh อีกครั้งเพื่อให้ UI อัปเดต
+    loadTargetForPeriod();
+    refreshOverviewOnly();
+    if(document.getElementById('v-branches').classList.contains('on')) renderBranchTable();
   }catch(e){console.error('loadAllData error:',e);refresh();}
 }
 
