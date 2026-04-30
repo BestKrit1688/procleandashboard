@@ -779,9 +779,11 @@ const PLBL={overview:'ภาพรวม',daily:'ยอดรายวัน',br
 const PDEF={admin:PERMS,supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],readonly:['overview','daily']};
 
 // ── USER DB ──
-let USERS=[
+// Local fallback users — always available even without Firebase
+const LOCAL_USERS=[
   {uid:'u1',username:'admin',password:'admin123',name:'Admin HQ',role:'admin',scope:null,perms:[...PERMS]},
 ];
+let USERS=[...LOCAL_USERS];
 let nextUid=2;
 let CU=null; // current user
 
@@ -812,13 +814,27 @@ function classifyService(svc,price){
 }
 
 // ── AUTH ──
-function doLogin(){
+async function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value;
-  const found=USERS.find(x=>x.username===u&&x.password===p);
-  if(!found){document.getElementById('lerr').textContent='Username หรือ Password ไม่ถูกต้อง';return;}
+  const errEl=document.getElementById('lerr');
+  const btn=document.querySelector('.lbtn');
+
+  // ถ้า Firebase ยังโหลดไม่เสร็จ รอสักครู่
+  if(db&&!usersLoaded){
+    btn.textContent='กำลังโหลด...';btn.disabled=true;
+    for(let i=0;i<30;i++){
+      if(usersLoaded) break;
+      await new Promise(r=>setTimeout(r,200));
+    }
+    btn.textContent='เข้าสู่ระบบ';btn.disabled=false;
+  }
+
+  const found=USERS.find(x=>x.username===u&&x.password===p)
+    || LOCAL_USERS.find(x=>x.username===u&&x.password===p);
+  if(!found){errEl.textContent='Username หรือ Password ไม่ถูกต้อง';return;}
   CU=found;
-  document.getElementById('lerr').textContent='';
+  errEl.textContent='';
   document.getElementById('ls').classList.add('hide');
   document.getElementById('app').classList.add('show');
   initForUser();
@@ -2136,15 +2152,32 @@ async function saveBranchDataToDB(id){
 }
 
 // ── USERS ──
+let usersLoaded=false;
+
 async function loadUsersFromDB(){
-  if(!db) return;
-    try{
+  if(!db){usersLoaded=true;return;}
+  try{
     const snap=await db.collection('users').get();
-    if(snap.empty) return; // ใช้ default USERS ถ้าไม่มีใน Firebase
-    USERS=[];
-    snap.forEach(doc=>USERS.push({...doc.data(),uid:doc.id}));
-    nextUid=USERS.length+1;
-  }catch(e){console.error('loadUsersFromDB:',e);}
+    if(snap.empty){
+      // Firebase ว่าง — save local users ลงไป
+      for(const u of LOCAL_USERS){
+        await db.collection('users').doc(u.uid).set(u);
+      }
+      USERS=[...LOCAL_USERS];
+    } else {
+      USERS=[];
+      snap.forEach(doc=>USERS.push({...doc.data(),uid:doc.id}));
+      // Always ensure admin exists locally
+      if(!USERS.find(u=>u.role==='admin')){
+        USERS.push(...LOCAL_USERS);
+      }
+    }
+    usersLoaded=true;
+  }catch(e){
+    console.error('loadUsersFromDB:',e);
+    USERS=[...LOCAL_USERS]; // fallback to local
+    usersLoaded=true;
+  }
 }
 
 async function saveUserToDB(u){
@@ -2169,6 +2202,8 @@ async function loadAllData(){
 }
 
 // ── INIT ──
+// โหลด users จาก Firebase ทันทีที่หน้าเว็บเปิด (ไม่ต้องรอ login)
+if(typeof db!=='undefined'&&db) loadUsersFromDB();
 </script>
 <!-- MOBILE BOTTOM BAR -->
 <div id="mob-bar">
