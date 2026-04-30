@@ -2229,6 +2229,12 @@ async function loadUsersFromDB(){
       if(!USERS.find(u=>u.role==='admin')){
         USERS.push(...LOCAL_USERS);
       }
+      // Set nextUid higher than any existing uid to avoid collision
+      const maxUid=USERS.reduce((max,u)=>{
+        const n=parseInt(String(u.uid).replace(/\D/g,''))||0;
+        return n>max?n:max;
+      },1);
+      nextUid=maxUid+1;
     }
     usersLoaded=true;
   }catch(e){
