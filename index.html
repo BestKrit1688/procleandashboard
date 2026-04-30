@@ -765,6 +765,7 @@ const COST={};
 BR.forEach(b=>{COST[b.id]={labor:0,rent:0};}); // labor=ค่าแรง, rent=ค่าเช่า
 const branchTargets={};
 BR.forEach(b=>{branchTargets[b.id]=0;});
+const branchMonthlyTargets={}; // เก็บเป้าแยกปี+เดือน เช่น {cla: {'2026_04': 500000}}
 
 // Imported data store (per branch per day)
 const IMPORTED={}; // key = brId, value = {date, rows, revenue, cars, buy_pkg, use_pkg, services}
@@ -1009,6 +1010,7 @@ function applyPeriod(){
     periodDays=[];
     periodLabel=yr==='all'?'2025+2026':String(yr);
   }
+  loadTargetForPeriod(); // โหลดเป้าของเดือน/ปีที่เลือก
   refresh();
 }
 function getPeriodRevenue(id){
@@ -2128,25 +2130,70 @@ async function saveUploadLog(logObj){
 // ── BRANCH DATA (cost + target) ──
 async function loadBranchData(){
   if(!db) return;
-    try{
+  try{
     const snap=await db.collection('branch_data').get();
+    const now=new Date();
+    const mm=String(now.getMonth()+1).padStart(2,'0');
+    const yy=String(now.getFullYear());
     snap.forEach(doc=>{
       const id=doc.id;
       const d=doc.data();
-      if(COST[id]){COST[id].labor=d.labor||0;COST[id].rent=d.rent||0;}
-      if(branchTargets[id]!==undefined) branchTargets[id]=d.target||0;
+      // restore cost
+      if(COST[id]){
+        COST[id].labor=d.labor||0;
+        COST[id].rent=d.rent||0;
+      }
+      // restore supervisor
+      const branch=BR.find(b=>b.id===id);
+      if(branch&&d.sup) branch.sup=d.sup;
+      // restore target for current month (also load all months into branchTargets)
+      // Default: current month target
+      const curKey=`${yy}_${mm}`;
+      if(d.targets&&d.targets[curKey]!==undefined){
+        branchTargets[id]=d.targets[curKey];
+      } else if(d.target!==undefined){
+        branchTargets[id]=d.target; // backward compat
+      }
+      // Store all monthly targets for future use
+      if(d.targets) branchMonthlyTargets[id]=d.targets;
     });
   }catch(e){console.error('loadBranchData:',e);}
 }
 
+// Load target for a specific year+month
+function loadTargetForPeriod(){
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  if(!mEl||!yEl) return;
+  const mm=String(parseInt(mEl.value)).padStart(2,'0');
+  const yy=yEl.value;
+  const key=`${yy}_${mm}`;
+  BR.forEach(b=>{
+    const monthly=branchMonthlyTargets[b.id];
+    if(monthly&&monthly[key]!==undefined) branchTargets[b.id]=monthly[key];
+    else if(monthly){
+      // ถ้าไม่มีของเดือนนั้น ให้เป็น 0
+      branchTargets[b.id]=0;
+    }
+  });
+}
+
 async function saveBranchDataToDB(id){
   if(!db) return;
-    try{
+  try{
+    // เป้าบันทึกแยกตามปี+เดือน เช่น targets.2026_04 = 500000
+    const mEl=document.getElementById('dp-m');
+    const yEl=document.getElementById('dp-y');
+    const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+    const yy=yEl?yEl.value:String(new Date().getFullYear());
+    const targetKey=`targets.${yy}_${mm}`;
+    const branch=BR.find(b=>b.id===id);
     await db.collection('branch_data').doc(id).set({
       labor:COST[id]?.labor||0,
       rent:COST[id]?.rent||0,
-      target:branchTargets[id]||0,
-      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      [targetKey]:branchTargets[id]||0,  // เป้าแยกปี+เดือน
+      sup:branch?.sup||'',               // ผู้ดูแล
+      updatedAt:new Date().toISOString()
     },{merge:true});
   }catch(e){console.error('saveBranchDataToDB:',e);}
 }
