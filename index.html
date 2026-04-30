@@ -2008,7 +2008,7 @@ function saveUser(){
   if(!uid&&USERS.find(u=>u.username===username)){document.getElementById('merr').textContent='Username นี้มีอยู่แล้ว';return;}
   let savedUser;
   if(uid){
-    const i=USERS.findIndex(u=>u.uid===uid);
+    const i=USERS.findIndex(u=>String(u.uid)===String(uid));
     if(i>=0){
       USERS[i]={...USERS[i],username,name,role,scope,perms};
       if(pass) USERS[i].password=pass;
@@ -2022,7 +2022,17 @@ function saveUser(){
   if(savedUser) saveUserToDB(savedUser); // บันทึกลง Firebase
   renderUsers();
 }
-function delUser(uid){if(!confirm('ยืนยันลบ?'))return;USERS=USERS.filter(u=>u.uid!==uid);deleteUserFromDB(uid);renderUsers();}
+function delUser(uid){
+  const u=USERS.find(x=>String(x.uid)===String(uid));
+  if(!u) return;
+  if(u.role==='admin'&&USERS.filter(x=>x.role==='admin').length<=1){
+    alert('ไม่สามารถลบ Admin คนสุดท้ายได้');return;
+  }
+  if(!confirm(`ยืนยันลบ "${u.name}" (@${u.username})?`)) return;
+  USERS=USERS.filter(x=>String(x.uid)!==String(uid));
+  deleteUserFromDB(String(uid));
+  renderUsers();
+}
 
 // ── NAV ──
 const PG_TITLES={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
@@ -2225,10 +2235,6 @@ async function loadUsersFromDB(){
     } else {
       USERS=[];
       snap.forEach(doc=>USERS.push({...doc.data(),uid:doc.id}));
-      // Always ensure admin exists locally
-      if(!USERS.find(u=>u.role==='admin')){
-        USERS.push(...LOCAL_USERS);
-      }
       // Set nextUid higher than any existing uid to avoid collision
       const maxUid=USERS.reduce((max,u)=>{
         const n=parseInt(String(u.uid).replace(/\D/g,''))||0;
