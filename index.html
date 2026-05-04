@@ -934,7 +934,7 @@ function initForUser(){
 
   buildBcList();
   mobInitNav();
-  refresh(); // แสดงกราฟเปล่าก่อน
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light'); // แสดงกราฟเปล่าก่อน
   loadAllData(); // โหลดข้อมูลจาก Firebase แล้ว refresh อีกรอบ
   if(CU.role==='admin') renderUsers();
 }
@@ -986,16 +986,16 @@ function bcToggle(id,checked,labelEl){
   if(CU.role==='branch') return;
   if(checked){selBr.add(id);labelEl.classList.add('on');}
   else{selBr.delete(id);labelEl.classList.remove('on');}
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function toggleBr(id,el){
   if(CU.role==='branch') return; // locked
   if(selBr.has(id)){selBr.delete(id);el.classList.remove('on');}else{selBr.add(id);el.classList.add('on');}
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
-function selAll(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.add(b.id));buildBcList();refresh();}
-function selNone(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.delete(b.id));buildBcList();refresh();}
-function applyYear(){CY=document.getElementById('fYear')?.value==='all'?'all':parseInt(document.getElementById('fYear')?.value||getLatestYear());refresh();}
+function selAll(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.add(b.id));buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
+function selNone(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.delete(b.id));buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
+function applyYear(){CY=document.getElementById('fYear')?.value==='all'?'all':parseInt(document.getElementById('fYear')?.value||getLatestYear());scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 
 // ── PERIOD PICKER ──
 let periodDays=[]; // empty = all days; filled = specific days to sum
@@ -1052,7 +1052,7 @@ function applyPeriod(){
   }
   loadTargetForPeriod(); // โหลดเป้าของเดือน/ปีที่เลือก
   loadCostForPeriod();
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function getCostPeriodLabel(){
   const mEl=document.getElementById('dp-m');
@@ -1114,25 +1114,35 @@ function applyBrand(){
   const pool=getFilteredPool();
   if(CU.role==='supervisor') selBr=new Set(pool.map(b=>b.id));
   else selBr=new Set(pool.map(b=>b.id));
-  buildBcList();refresh();
+  buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function applyRegion(){
   if(CU.role==='branch') return;
   activeRegion=document.getElementById('fRegion').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
-  buildBcList();refresh();
+  buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function applySup(){
   if(CU.role==='branch'||CU.role==='supervisor') return; // locked
   activeSup=document.getElementById('fSup').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
-  buildBcList(); refresh();
+  buildBcList(); scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 // ── MAIN REFRESH ──
-function refresh(){
+let ACTIVE_VIEW='overview';
+let _rf=null,_rfScope='all';
+function scheduleRefresh(scope='all'){
+  _rfScope=scope;
+  if(_rf) return;
+  _rf=requestAnimationFrame(()=>{
+    const sc=_rfScope; _rf=null; _rfScope='all';
+    refresh(sc);
+  });
+}
+function refresh(scope='all'){
   const sel=getSel();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
@@ -1164,13 +1174,15 @@ function refresh(){
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
   renderForecast(tRev);
-  drawDailyChart();
-  drawBranchChart();
-  drawBrandChart();
-  drawSizeChart();
-  drawCmpChart();
-  drawSupChart();
-  drawMenuOv();
+  if(scope==='all' || scope==='overview'){
+    drawDailyChart();
+    drawBranchChart();
+    drawBrandChart();
+    drawSizeChart();
+    drawCmpChart();
+    drawSupChart();
+    drawMenuOv();
+  }
 }
 
 function updateCostOv(sel,tRev,tCost,costPct,gp){
@@ -1657,7 +1669,7 @@ function refreshOverviewOnly(){
 let brBrandFilter='all';
 function setBT(brand,el){brBrandFilter=brand;document.querySelectorAll('#br-tabs .rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderBranchTable();}
 function brSort(key){if(brSortKey===key)brSortAsc=!brSortAsc;else{brSortKey=key;brSortAsc=false;}renderBranchTable();}
-function brToggleAll(v){document.querySelectorAll('#br-tbody .bchk').forEach(c=>{c.checked=v;const id=c.dataset.id;if(v)selBr.add(id);else selBr.delete(id);});refresh();}
+function brToggleAll(v){document.querySelectorAll('#br-tbody .bchk').forEach(c=>{c.checked=v;const id=c.dataset.id;if(v)selBr.add(id);else selBr.delete(id);});scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 function brSelectAll(){document.getElementById('chk-all').checked=true;brToggleAll(true);}
 function brSelectNone(){document.getElementById('chk-all').checked=false;brToggleAll(false);}
 
@@ -1785,7 +1797,7 @@ function updateBrSummary(sel){
 }
 function brCheckChange(id,checked){
   if(checked)selBr.add(id);else selBr.delete(id);
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
   // sync sidebar bc-list
   buildBcList();
 }
@@ -1976,7 +1988,7 @@ function importData(){
     document.getElementById('prev-wrap').style.display='none';
     document.getElementById('finp').value='';
   },3000);
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 function cancelPrev(){PENDING=null;document.getElementById('prev-wrap').style.display='none';document.getElementById('finp').value='';}
@@ -2050,7 +2062,7 @@ function deleteUpload(i){
     db.collection('upload_logs').doc(l._docId).delete()
       .catch(e=>console.error('deleteUpload Firebase:',e));
   }
-  UPLOG.splice(i,1);renderUpLog();refresh();
+  UPLOG.splice(i,1);renderUpLog();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 // ── USER MANAGEMENT ──
@@ -2149,28 +2161,32 @@ function delUser(uid){
 // ── NAV ──
 const PG_TITLES={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
 function go(view,el){
+  ACTIVE_VIEW=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.getElementById('v-'+view).classList.add('on');
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('pgtitle').textContent=PG_TITLES[view]||view;
-  refresh();
-  if(view==='daily') renderDailyTable();
-  if(view==='branches') renderBranchTable();
-  if(view==='users') renderUsers();
+  if(view==='overview') scheduleRefresh('overview');
+  else scheduleRefresh('light');
+  if(view==='daily') requestAnimationFrame(()=>renderDailyTable());
+  if(view==='branches') requestAnimationFrame(()=>renderBranchTable());
+  if(view==='users') requestAnimationFrame(()=>renderUsers());
 }
 
 // ── MOBILE ──
 function mobGo(view,el){
+  ACTIVE_VIEW=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   const vEl=document.getElementById('v-'+view);
   if(vEl)vEl.classList.add('on');
   const titles={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
   document.getElementById('pgtitle').textContent=titles[view]||view;
-  refresh();
-  if(view==='daily')renderDailyTable();
-  if(view==='branches')renderBranchTable();
-  if(view==='users')renderUsers();
+  if(view==='overview') scheduleRefresh('overview');
+  else scheduleRefresh('light');
+  if(view==='daily')requestAnimationFrame(()=>renderDailyTable());
+  if(view==='branches')requestAnimationFrame(()=>renderBranchTable());
+  if(view==='users')requestAnimationFrame(()=>renderUsers());
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
 }
@@ -2208,7 +2224,7 @@ function mobInitNav(){
 
 // ── UPLOAD LOGS ──
 async function loadUploadLogs(){
-  if(!db){refresh();return;}
+  if(!db){scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');return;}
   try{
     // Try server first, fallback to cache if offline
     let snap;
@@ -2251,8 +2267,8 @@ async function loadUploadLogs(){
       }
     });
     renderUpLog();
-    refresh();
-  }catch(e){console.error('loadUploadLogs:',e);refresh();}
+    scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  }catch(e){console.error('loadUploadLogs:',e);scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 }
 
 async function saveUploadLog(logObj){
@@ -2425,7 +2441,7 @@ async function loadAllData(){
     loadCostForPeriod();
     refreshOverviewOnly();
     if(document.getElementById('v-branches').classList.contains('on')) renderBranchTable();
-  }catch(e){console.error('loadAllData error:',e);refresh();}
+  }catch(e){console.error('loadAllData error:',e);scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 }
 
 // ── INIT ──
