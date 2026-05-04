@@ -1136,7 +1136,7 @@ function refresh(){
   const sel=getSel();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
-  const tNew=sel.reduce((s,b)=>s+DATA[b.id].new26,0);
+  const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
   // cost
   const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
@@ -1633,7 +1633,7 @@ function refreshOverviewOnly(){
   const sel=getSel();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
-  const tNew=sel.reduce((s,b)=>s+DATA[b.id].new26,0);
+  const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
   const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
