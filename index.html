@@ -1841,6 +1841,10 @@ function handleFile(file){
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       // detect branch from sheet name
       const detectedBrId=detectBranchFromSheet(sheetName);
+      if(CU&&CU.role==='branch'){
+        if(!detectedBrId){alert('ไม่สามารถระบุสาขาจากชื่อชีตได้ (ผู้ใช้สาขาต้องอัปโหลดไฟล์สาขาตัวเอง)');return;}
+        if(String(detectedBrId)!==String(CU.scope)){alert('สิทธิ์ไม่อนุญาต: อัปโหลดได้เฉพาะไฟล์ของสาขาตัวเองเท่านั้น');return;}
+      }
       // detect date from filename
       const dateMatch=file.name.match(/(\d{4}-\d{2}-\d{2})/);
       const fileDate=dateMatch?dateMatch[1]:new Date().toISOString().split('T')[0];
@@ -1883,6 +1887,10 @@ function importData(){
   if(!canUpload()) return;
   if(!PENDING) return;
   const {rows,name,detectedBrId,fileDate}=PENDING;
+  if(CU&&CU.role==='branch'&&String(detectedBrId)!==String(CU.scope)){
+    alert('สิทธิ์ไม่อนุญาต: อัปโหลดได้เฉพาะข้อมูลสาขาตัวเอง');
+    return;
+  }
   const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
   const totalCars=completed.length;
 
