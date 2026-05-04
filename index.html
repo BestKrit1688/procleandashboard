@@ -476,7 +476,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
       <!-- Brand / Size / Cmp / Sup -->
       <div class="row r32">
         <div class="panel">
-          <div class="ph"><span class="pt">2025 vs 2026</span></div>
+          <div class="ph"><span class="pt">เปรียบเทียบรายปี</span></div>
           <div class="pwrap" style="height:130px"><canvas id="ch-cmp" role="img" aria-label="เปรียบเทียบ"></canvas></div>
           <div class="divider"></div>
           <div class="ph" style="margin-bottom:8px"><span class="pt" style="font-size:12px">ยอดตามผู้ดูแล</span></div>
@@ -577,7 +577,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
           <span id="imp-stat" style="font-size:12px;color:var(--tx3)"></span>
         </div>
       </div>
-      <div class="panel"><div class="ph"><span class="pt">ประวัติการอัปโหลด</span></div><div id="uplog"><div style="color:var(--tx3);font-size:12px;text-align:center;padding:18px">ยังไม่มีประวัติ</div></div></div>
+      <div class="panel"><div class="ph"><span class="pt">ประวัติการอัปโหลด</span><div id="uplog-meta" style="font-size:11px;color:var(--tx3)"></div></div><div id="uplog"><div style="color:var(--tx3);font-size:12px;text-align:center;padding:18px">ยังไม่มีประวัติ</div></div><div id="uplog-pager" style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="prevUpLogPage()">ก่อนหน้า</button><button class="btn btn-ghost btn-xs" onclick="nextUpLogPage()">ถัดไป</button></div></div>
     </div>
 
     <!-- ═══ USERS ═══ -->
@@ -737,8 +737,16 @@ const REAL26={};
 const REAL25={};
 function simR(id,y){return 0;}
 const DATA={};
-BR.forEach(b=>{DATA[b.id]={r26:REAL26[b.id]||simR(b.id,'a'),r25:REAL25[b.id]||simR(b.id,'b'),o26:0,o25:0,cars26:0,new26:0};
-  DATA[b.id].o26=Math.round(DATA[b.id].r26/720);DATA[b.id].o25=Math.round(DATA[b.id].r25/690);DATA[b.id].cars26=DATA[b.id].o26;DATA[b.id].new26=Math.round(DATA[b.id].r26/4200);
+BR.forEach(b=>{
+  const yA=2026,yB=2025;
+  const rA=REAL26[b.id]||simR(b.id,'a');
+  const rB=REAL25[b.id]||simR(b.id,'b');
+  DATA[b.id]={
+    revByYear:{[yA]:rA,[yB]:rB},
+    ordByYear:{[yA]:Math.round(rA/720),[yB]:Math.round(rB/690)},
+    carsByYear:{[yA]:Math.round(rA/720)},
+    newByYear:{[yA]:Math.round(rA/4200)}
+  };
 });
 
 // daily
@@ -748,7 +756,7 @@ const DAILY_EXTRA={}; // key = "YYYY-MM-DD_brId" e.g. "2026-04-24_cpr9"
 const DAILY_CARS={};  // key = "YYYY-MM-DD_brId" — จำนวนรถรายวัน
 function getDR(d,id){
   // Build full date key from current period context
-  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
   const mEl=document.getElementById('dp-m');
   const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
   const dd=String(d).padStart(2,'0');
@@ -764,6 +772,7 @@ const SIZES=[{s:'L',r:0},{s:'M',r:0},{s:'XL',r:0}];
 // cost & targets
 const COST={};
 BR.forEach(b=>{COST[b.id]={labor:0,rent:0};}); // labor=ค่าแรง, rent=ค่าเช่า
+const branchMonthlyCosts={}; // {brId: {'YYYY_MM': {labor,rent}}}
 const branchTargets={};
 BR.forEach(b=>{branchTargets[b.id]=0;});
 const branchMonthlyTargets={}; // เก็บเป้าแยกปี+เดือน เช่น {cla: {'2026_04': 500000}}
@@ -788,10 +797,15 @@ const LOCAL_USERS=[
 let USERS=[...LOCAL_USERS];
 let nextUid=2;
 let CU=null; // current user
+const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],readonly:['overview','daily']};
+function normalizeUser(u){if(!u) return u; const role=u.role||'readonly'; const base=ROLE_BASE_PERMS[role]||ROLE_BASE_PERMS.readonly; return {...u,perms:[...new Set(base)]};}
+function canUpload(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='branch');}
+function canEditBranch(){return CU&&(CU.role==='admin'||CU.role==='supervisor');}
+function canManageUsers(){return CU&&CU.role==='admin';}
 
 // ── STATE ──
 let selBr=new Set(BR.map(b=>b.id));
-let CY=2026;
+let CY=new Date().getFullYear();
 let brandTab='all';
 let brSortKey='rev';let brSortAsc=false;
 let menuOvMode='rev';
@@ -801,8 +815,11 @@ const CH={};
 // ── UTILS ──
 const fmt=n=>'฿'+Math.round(n).toLocaleString('th-TH');
 const fN=n=>Math.round(n).toLocaleString('th-TH');
-function getRev(id){return CY==='all'?(DATA[id].r26+DATA[id].r25):CY===2026?DATA[id].r26:DATA[id].r25;}
-function getOrd(id){return CY==='all'?(DATA[id].o26+DATA[id].o25):CY===2026?DATA[id].o26:DATA[id].o25;}
+function getKnownYears(){const ys=new Set();Object.values(DATA).forEach(d=>Object.keys(d.revByYear||{}).forEach(y=>ys.add(parseInt(y))));Object.keys(DAILY_EXTRA).forEach(k=>{const y=parseInt(String(k).slice(0,4));if(!isNaN(y)) ys.add(y);});return [...ys].sort((a,b)=>b-a);}
+function getLatestYear(){return getKnownYears()[0]||new Date().getFullYear();}
+function sumObj(o){return Object.values(o||{}).reduce((s,v)=>s+(+v||0),0);}
+function getRev(id){const d=DATA[id]||{};return CY==='all'?sumObj(d.revByYear):(+d.revByYear?.[CY]||0);}
+function getOrd(id){const d=DATA[id]||{};return CY==='all'?sumObj(d.ordByYear):(+d.ordByYear?.[CY]||0);}
 function getSel(){return BR.filter(b=>selBr.has(b.id));}
 function isPackage(svc){const s=svc.toLowerCase();return s.includes('package')||s.includes('เล่มที่')||s.includes('เลขที่ :');}
 function classifyService(svc,price){
@@ -841,7 +858,7 @@ async function doLogin(){
   const found=USERS.find(x=>x.username===u&&x.password===p)
     || LOCAL_USERS.find(x=>x.username===u&&x.password===p);
   if(!found){errEl.textContent='Username หรือ Password ไม่ถูกต้อง';return;}
-  CU=found;
+  CU=normalizeUser(found);
   document.getElementById('ls').classList.add('hide');
   document.getElementById('app').classList.add('show');
   initForUser();
@@ -870,7 +887,7 @@ function initForUser(){
   document.querySelectorAll('.nav').forEach(n=>{
     const view=n.getAttribute('onclick')?.match(/go\('(\w+)'/)?.[1];
     if(view&&view!=='overview'){
-      const hasPerm=CU.perms.includes(view)||CU.role==='admin';
+      const hasPerm=(CU.perms||[]).includes(view)||CU.role==='admin';
       n.style.display=hasPerm?'':'none';
     }
   });
@@ -978,7 +995,7 @@ function toggleBr(id,el){
 }
 function selAll(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.add(b.id));buildBcList();refresh();}
 function selNone(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.delete(b.id));buildBcList();refresh();}
-function applyYear(){CY=document.getElementById('fYear')?.value==='all'?'all':parseInt(document.getElementById('fYear')?.value||2026);refresh();}
+function applyYear(){CY=document.getElementById('fYear')?.value==='all'?'all':parseInt(document.getElementById('fYear')?.value||getLatestYear());refresh();}
 
 // ── PERIOD PICKER ──
 let periodDays=[]; // empty = all days; filled = specific days to sum
@@ -1031,14 +1048,24 @@ function applyPeriod(){
     const yr=document.getElementById('dp-yr').value;
     CY=yr==='all'?'all':parseInt(yr);
     periodDays=[];
-    periodLabel=yr==='all'?'2025+2026':String(yr);
+    periodLabel=yr==='all'?'ทุกปี':String(yr);
   }
   loadTargetForPeriod(); // โหลดเป้าของเดือน/ปีที่เลือก
+  loadCostForPeriod();
   refresh();
 }
+function getCostPeriodLabel(){
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  const mN=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  if(!mEl||!yEl) return '';
+  const m=Math.max(1,Math.min(12,parseInt(mEl.value)||1));
+  return `${mN[m-1]} ${yEl.value}`;
+}
+
 function getPeriodRevenue(id){
   const mode=document.getElementById('fPeriod')?.value||'month';
-  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
   // For year mode: sum all months
   if(mode==='year'){
     return Object.keys(DAILY_EXTRA)
@@ -1058,7 +1085,7 @@ function getPeriodRevenue(id){
 // Count cars (เสร็จงาน) for the selected period from UPLOG
 function getPeriodCars(id){
   const mode=document.getElementById('fPeriod')?.value||'month';
-  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
   // year mode: sum all months
   if(mode==='year'){
     return Object.keys(DAILY_CARS)
@@ -1116,14 +1143,15 @@ function refresh(){
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
   const gp=tRev-tCost;
 
-  // YoY (always compare full-month 2025 vs 2026)
-  const r26=sel.reduce((s,b)=>s+DATA[b.id].r26,0);
-  const r25=sel.reduce((s,b)=>s+DATA[b.id].r25,0);
-  const yoy=r25>0?((r26-r25)/r25*100).toFixed(1):0;
+  // YoY (always compare full-month เปรียบเทียบรายปี)
+  const ys=getKnownYears(); const y0=ys[0]||getLatestYear(); const y1=ys[1]||y0-1;
+  const v0=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[y0]||0),0);
+  const v1=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[y1]||0),0);
+  const yoy=v1>0?((v0-v1)/v1*100).toFixed(1):0;
 
   // KPI
   document.getElementById('kpi-main').innerHTML=`
-    <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===2026?(yoy>=0?'▲':'▼')+Math.abs(yoy)+'% vs 2025':''}</div></div>
+    <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
     <div class="kpi ${costPct>60?'r':costPct>40?'a':'g'}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
@@ -1152,7 +1180,7 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
   const laborPct=tRev>0?(labor/tRev*100).toFixed(1):0;
   const rentPct=tRev>0?(rent/tRev*100).toFixed(1):0;
 
-  document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุนรวม ${costPct}% ของยอดขาย`:'ยังไม่กรอกต้นทุน';
+  document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุน ${getCostPeriodLabel()} · ${costPct}% ของยอดขาย`:`ยังไม่กรอกต้นทุน (${getCostPeriodLabel()})`; 
   document.getElementById('cost-ov-badge').style.background=hasCost?(costPct<=40?'rgba(34,197,94,.15)':costPct<=60?'rgba(245,158,11,.15)':'rgba(239,68,68,.15)'):'';
   document.getElementById('cost-ov-badge').style.color=hasCost?(costPct<=40?'#86efac':costPct<=60?'#fcd34d':'#fca5a5'):'';
   const barEl=document.getElementById('cost-ov-bar-wrap');
@@ -1412,8 +1440,8 @@ function drawSizeChart(){
 
 function drawCmpChart(){
   dc('cmp');
-  const sel=getSel();const r26=sel.reduce((s,b)=>s+DATA[b.id].r26,0);const r25=sel.reduce((s,b)=>s+DATA[b.id].r25,0);
-  CH['cmp']=new Chart(document.getElementById('ch-cmp'),{type:'bar',data:{labels:['2025','2026'],datasets:[{data:[r25,r26],backgroundColor:['#1e2d4a','#3b82f6'],borderRadius:7,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000000).toFixed(1)+'M'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>fmt(i.raw)}}}}});
+  const sel=getSel(); const ys=getKnownYears(); const yA=ys[0]||getLatestYear(); const yB=ys[1]||yA-1; const vA=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[yA]||0),0); const vB=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[yB]||0),0);
+  CH['cmp']=new Chart(document.getElementById('ch-cmp'),{type:'bar',data:{labels:[String(yB),String(yA)],datasets:[{data:[vB,vA],backgroundColor:['#1e2d4a','#3b82f6'],borderRadius:7,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000000).toFixed(1)+'M'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>fmt(i.raw)}}}}});
 }
 
 function drawSupChart(){
@@ -1610,12 +1638,13 @@ function refreshOverviewOnly(){
   const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
   const gp=tRev-tCost;
-  const r26=sel.reduce((s,b)=>s+DATA[b.id].r26,0);
-  const r25=sel.reduce((s,b)=>s+DATA[b.id].r25,0);
-  const yoy=r25>0?((r26-r25)/r25*100).toFixed(1):0;
+  const ys=getKnownYears(); const y0=ys[0]||getLatestYear(); const y1=ys[1]||y0-1;
+  const v0=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[y0]||0),0);
+  const v1=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[y1]||0),0);
+  const yoy=v1>0?((v0-v1)/v1*100).toFixed(1):0;
   const kpiEl=document.getElementById('kpi-main');
   if(kpiEl) kpiEl.innerHTML=`
-    <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===2026?(yoy>=0?'▲':'▼')+Math.abs(yoy)+'% vs 2025':''}</div></div>
+    <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
     <div class="kpi ${costPct>60?'r':costPct>40?'a':'g'}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
@@ -1642,7 +1671,7 @@ function renderBranchTable(){
     return brSortAsc?(va>vb?1:-1):(va<vb?1:-1);
   });
   const tot=sel.reduce((s,b)=>s+getRev(b.id),0);
-  const canEdit=CU.role==='admin'||CU.role==='supervisor';
+  const canEdit=canEditBranch();
   document.getElementById('br-count-lbl').textContent=`${sel.length} สาขา`;
   const allChk=document.getElementById('chk-all');
   if(allChk) allChk.checked=sel.length>0&&sel.every(b=>selBr.has(b.id));
@@ -1750,7 +1779,7 @@ function updateBrSummary(sel){
   el.innerHTML=`
     <span style="color:var(--tx3)">รวม:</span>
     <span>ยอดขาย <strong class="mono">${fmt(tRev)}</strong></span>
-    <span>ต้นทุน <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+costPct+'%)':'—'}</strong></span>
+    <span>ต้นทุน (${getCostPeriodLabel()}) <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+costPct+'%)':'—'}</strong></span>
     <span>เป้า <strong class="mono">${tTgt>0?fmt(tTgt):'—'}</strong></span>
     ${tTgt>0?`<span style="color:${tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)'}">%เป้า <strong class="mono">${tgtPct}%</strong></span>`:''}`;
 }
@@ -1774,6 +1803,28 @@ function classifySvc(svc,price){
   if(slo.includes('voucher')||slo.includes('gift')) return 'Free/Voucher';
   if(slo.includes('ขัด')||slo.includes('เคลือบ')) return 'งานช่าง';
   return 'บริการอื่น';
+}
+
+
+function normText(v){return String(v??'').trim();}
+function getField(row,...keys){
+  const rowKeys=Object.keys(row||{});
+  for(const k of keys){
+    const exact=row[k]; if(exact!==undefined) return exact;
+    const found=rowKeys.find(rk=>String(rk).trim()===k);
+    if(found!==undefined) return row[found];
+  }
+  return '';
+}
+function parseMoney(v){
+  if(typeof v==='number') return v;
+  const t=normText(v);
+  if(!t) return 0;
+  const neg=t.startsWith('(')&&t.endsWith(')');
+  const cleaned=t.replace(/[(),฿\s]/g,'').replace(/,/g,'');
+  const n=parseFloat(cleaned);
+  if(Number.isNaN(n)) return 0;
+  return neg?-n:n;
 }
 
 function handleDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');handleFile(e.dataTransfer.files[0]);}
@@ -1806,13 +1857,13 @@ function showPreview(rows,fname,sheetName,detectedBrId){
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'ตรวจไม่พบ (กรุณาตรวจสอบ)';
   document.getElementById('prev-title').textContent=`Preview: ${fname}`;
   document.getElementById('prev-badge').textContent=`Sheet: ${sheetName} → สาขา: ${brName}`;
-  const completed=rows.filter(r=>r['สถานะใบงาน']==='เสร็จงาน');
-  const cancelled=rows.filter(r=>r['สถานะใบงาน']==='ยกเลิก');
+  const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
+  const cancelled=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='ยกเลิก');
   document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)`;
   const tbody=document.querySelector('#tbl-prev tbody');
   tbody.innerHTML=completed.map((r,i)=>{
-    const price=parseFloat(r['ราคารวม'])||0;
-    const svc=String(r['บริการ']||'');
+    const price=parseMoney(getField(r,'ราคารวม'));
+    const svc=String(getField(r,'บริการ')||'');
     const cat=classifySvc(svc,price);
     const tagCls=cat==='ซื้อ Package'?'imp-buy-pkg':cat==='ใช้ Package'?'imp-use-pkg':'imp-normal';
     const svcShort=svc.length>45?svc.slice(0,45)+'…':svc;
@@ -1829,14 +1880,15 @@ function showPreview(rows,fname,sheetName,detectedBrId){
 
 
 function importData(){
+  if(!canUpload()) return;
   if(!PENDING) return;
   const {rows,name,detectedBrId,fileDate}=PENDING;
-  const completed=rows.filter(r=>r['สถานะใบงาน']==='เสร็จงาน');
+  const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
   const totalCars=completed.length;
 
   // Helper: parse full date {day, month, year} from วันที่เข้าใช้บริการ
   function parseDateFromRow(r){
-    const raw=String(r['วันที่เข้าใช้บริการ']||r['เวลาเข้าใช้บริการ']||'');
+    const raw=String(getField(r,'วันที่เข้าใช้บริการ','เวลาเข้าใช้บริการ')||'');
     if(!raw) return null;
     // dd/MM/YYYY or dd/MM/YYYY HH:mm
     let m=raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
@@ -1854,8 +1906,8 @@ function importData(){
   let detectedYear=null;
 
   completed.forEach(r=>{
-    const price=parseFloat(r['ราคารวม'])||0;
-    const cat=classifySvc(String(r['บริการ']||''),price);
+    const price=parseMoney(getField(r,'ราคารวม'));
+    const cat=classifySvc(String(getField(r,'บริการ')||''),price);
     if(!svcBreak[cat])svcBreak[cat]={rev:0,count:0};
     svcBreak[cat].rev+=price;svcBreak[cat].count++;
     const dt=parseDateFromRow(r);
@@ -1877,7 +1929,7 @@ function importData(){
     }
   });
 
-  const totalRev=completed.reduce((s,r)=>s+(parseFloat(r['ราคารวม'])||0),0);
+  const totalRev=completed.reduce((s,r)=>s+parseMoney(getField(r,'ราคารวม')),0);
   const yr=detectedYear||new Date().getFullYear();
 
   // Update DAILY_EXTRA per day with full date key YYYY-MM-DD_brId
@@ -1888,14 +1940,9 @@ function importData(){
       DAILY_EXTRA[fullKey]=(DAILY_EXTRA[fullKey]||0)+rev;
     });
     // Store to correct year
-    if(yr===2025){
-      DATA[detectedBrId].r25=(DATA[detectedBrId].r25||0)+totalRev;
-      DATA[detectedBrId].o25=(DATA[detectedBrId].o25||0)+totalCars;
-    } else {
-      DATA[detectedBrId].r26=(DATA[detectedBrId].r26||0)+totalRev;
-      DATA[detectedBrId].o26=(DATA[detectedBrId].o26||0)+totalCars;
-      DATA[detectedBrId].cars26=(DATA[detectedBrId].cars26||0)+totalCars;
-    }
+    DATA[detectedBrId].revByYear[yr]=(DATA[detectedBrId].revByYear[yr]||0)+totalRev;
+    DATA[detectedBrId].ordByYear[yr]=(DATA[detectedBrId].ordByYear[yr]||0)+totalCars;
+    DATA[detectedBrId].carsByYear[yr]=(DATA[detectedBrId].carsByYear[yr]||0)+totalCars;
   }
 
   const daysFound=[...new Set(Object.keys(dayRevMap))].length;
@@ -1926,6 +1973,9 @@ function importData(){
 
 function cancelPrev(){PENDING=null;document.getElementById('prev-wrap').style.display='none';document.getElementById('finp').value='';}
 
+let upLogPage=1; const UPLOG_PAGE_SIZE=20;
+function prevUpLogPage(){if(upLogPage>1){upLogPage--;renderUpLog();}}
+function nextUpLogPage(){upLogPage++;renderUpLog();}
 function renderUpLog(){
   const el=document.getElementById('uplog');
   // Filter visible entries by role
@@ -1937,8 +1987,14 @@ function renderUpLog(){
     // branch: only exact match to own scope
     return String(l.brId)===String(CU.scope);
   });
+  visible.sort((a,b)=>new Date(b.savedAt||0)-new Date(a.savedAt||0));
+  const totalPages=Math.max(1,Math.ceil(visible.length/UPLOG_PAGE_SIZE));
+  if(upLogPage>totalPages) upLogPage=totalPages;
+  const start=(upLogPage-1)*UPLOG_PAGE_SIZE;
+  const paged=visible.slice(start,start+UPLOG_PAGE_SIZE);
+  const meta=document.getElementById('uplog-meta'); if(meta) meta.textContent=`หน้า ${upLogPage}/${totalPages} · ทั้งหมด ${visible.length} รายการ`;
   if(!visible.length){el.innerHTML='<div style="color:var(--tx3);font-size:12px;text-align:center;padding:18px">ยังไม่มีประวัติ</div>';return;}
-  el.innerHTML=visible.map(l=>{
+  el.innerHTML=paged.map(l=>{
     const i=l._i;
     const canDelete=CU&&(CU.role==='admin'||CU.role==='supervisor'||l.brId===CU.scope);
     const svcHTML=Object.entries(l.svcBreak||{}).map(([cat,d])=>`<span class="imp-tag ${cat.includes('ซื้อ')?'imp-buy-pkg':cat.includes('ใช้')?'imp-use-pkg':'imp-normal'}" style="margin-right:3px">${cat}: ${d.count} (${fmt(d.rev)})</span>`).join('');
@@ -1955,6 +2011,7 @@ function renderUpLog(){
   }).join('');
 }
 function deleteUpload(i){
+  if(!(CU&&(CU.role==='admin'||CU.role==='supervisor'||(UPLOG[i]&&UPLOG[i].brId===CU.scope)))) return;
   const l=UPLOG[i];if(!l)return;
   if(l.brId){
     if(l.dayRevMap){
@@ -1975,15 +2032,10 @@ function deleteUpload(i){
       DAILY_EXTRA[key]=Math.max(0,(DAILY_EXTRA[key]||0)-l.rev);
       if(DAILY_EXTRA[key]===0)delete DAILY_EXTRA[key];
     }
-    const yr=l.year||2026;
-    if(yr===2025){
-      DATA[l.brId].r25=Math.max(0,(DATA[l.brId].r25||0)-l.rev);
-      DATA[l.brId].o25=Math.max(0,(DATA[l.brId].o25||0)-l.cars);
-    } else {
-      DATA[l.brId].r26=Math.max(0,(DATA[l.brId].r26||0)-l.rev);
-      DATA[l.brId].o26=Math.max(0,(DATA[l.brId].o26||0)-l.cars);
-      DATA[l.brId].cars26=Math.max(0,(DATA[l.brId].cars26||0)-l.cars);
-    }
+    const yr=l.year||getLatestYear();
+    DATA[l.brId].revByYear[yr]=Math.max(0,(DATA[l.brId].revByYear[yr]||0)-l.rev);
+    DATA[l.brId].ordByYear[yr]=Math.max(0,(DATA[l.brId].ordByYear[yr]||0)-l.cars);
+    DATA[l.brId].carsByYear[yr]=Math.max(0,(DATA[l.brId].carsByYear[yr]||0)-l.cars);
   }
   // ลบใน Firebase ด้วย — ทำให้ทุก device เห็นข้อมูลตรงกัน
   if(db&&l._docId){
@@ -2046,6 +2098,7 @@ function buildPermList(active){
     </div>`).join('');
 }
 function saveUser(){
+  if(!canManageUsers()) return;
   const uid=document.getElementById('muid').value;
   const username=document.getElementById('mu').value.trim();
   const name=document.getElementById('mname').value.trim();
@@ -2073,6 +2126,7 @@ function saveUser(){
   renderUsers();
 }
 function delUser(uid){
+  if(!canManageUsers()) return;
   const u=USERS.find(x=>String(x.uid)===String(uid));
   if(!u) return;
   if(u.role==='admin'&&USERS.filter(x=>x.role==='admin').length<=1){
@@ -2151,7 +2205,7 @@ async function loadUploadLogs(){
     // Try server first, fallback to cache if offline
     let snap;
     try{
-      snap=await db.collection('upload_logs').orderBy('savedAt','desc').limit(500).get();
+      snap=await db.collection('upload_logs').orderBy('savedAt','desc').get();
     }catch(e2){
       // fallback: no ordering (works offline)
       snap=await db.collection('upload_logs').get();
@@ -2160,7 +2214,7 @@ async function loadUploadLogs(){
     // Reset DATA and DAILY_EXTRA before restoring from Firebase
     Object.keys(DAILY_EXTRA).forEach(k=>delete DAILY_EXTRA[k]);
     Object.keys(DAILY_CARS).forEach(k=>delete DAILY_CARS[k]);
-    BR.forEach(b=>{DATA[b.id].r26=0;DATA[b.id].r25=0;DATA[b.id].o26=0;DATA[b.id].o25=0;DATA[b.id].cars26=0;});
+    BR.forEach(b=>{DATA[b.id].revByYear={};DATA[b.id].ordByYear={};DATA[b.id].carsByYear={};});
     snap.forEach(doc=>{
       const d=doc.data();
       // Filter by role
@@ -2182,8 +2236,10 @@ async function loadUploadLogs(){
       }
       // Restore DATA totals
       if(d.brId&&DATA[d.brId]){
-        if(d.year===2025){DATA[d.brId].r25=(DATA[d.brId].r25||0)+(d.rev||0);DATA[d.brId].o25=(DATA[d.brId].o25||0)+(d.cars||0);}
-        else{DATA[d.brId].r26=(DATA[d.brId].r26||0)+(d.rev||0);DATA[d.brId].o26=(DATA[d.brId].o26||0)+(d.cars||0);DATA[d.brId].cars26=(DATA[d.brId].cars26||0)+(d.cars||0);}
+        const y=d.year||parseInt(String(Object.keys(d.dayRevMap||{})[0]||'').slice(0,4))||getLatestYear();
+        DATA[d.brId].revByYear[y]=(DATA[d.brId].revByYear[y]||0)+(d.rev||0);
+        DATA[d.brId].ordByYear[y]=(DATA[d.brId].ordByYear[y]||0)+(d.cars||0);
+        DATA[d.brId].carsByYear[y]=(DATA[d.brId].carsByYear[y]||0)+(d.cars||0);
       }
     });
     renderUpLog();
@@ -2213,17 +2269,23 @@ async function loadBranchData(){
     snap.forEach(doc=>{
       const id=doc.id;
       const d=doc.data();
-      // restore cost
+      // restore cost (monthly + backward compatibility)
+      const curKey=`${yy}_${mm}`;
+      if(d.costs) branchMonthlyCosts[id]=d.costs;
       if(COST[id]){
-        COST[id].labor=d.labor||0;
-        COST[id].rent=d.rent||0;
+        if(d.costs&&d.costs[curKey]){
+          COST[id].labor=d.costs[curKey].labor||0;
+          COST[id].rent=d.costs[curKey].rent||0;
+        } else {
+          COST[id].labor=d.labor||0;
+          COST[id].rent=d.rent||0;
+        }
       }
       // restore supervisor
       const branch=BR.find(b=>b.id===id);
       if(branch&&d.sup) branch.sup=d.sup;
       // restore target for current month (also load all months into branchTargets)
       // Default: current month target
-      const curKey=`${yy}_${mm}`;
       if(d.targets&&d.targets[curKey]!==undefined){
         branchTargets[id]=d.targets[curKey];
       } else if(d.target!==undefined){
@@ -2236,6 +2298,25 @@ async function loadBranchData(){
 }
 
 // Load target for a specific year+month
+
+function loadCostForPeriod(){
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  if(!mEl||!yEl) return;
+  const mm=String(parseInt(mEl.value)).padStart(2,'0');
+  const yy=yEl.value;
+  const key=`${yy}_${mm}`;
+  BR.forEach(b=>{
+    const monthly=branchMonthlyCosts[b.id];
+    if(monthly&&monthly[key]){
+      COST[b.id].labor=monthly[key].labor||0;
+      COST[b.id].rent=monthly[key].rent||0;
+    }else if(monthly){
+      COST[b.id].labor=0; COST[b.id].rent=0;
+    }
+  });
+}
+
 function loadTargetForPeriod(){
   const mEl=document.getElementById('dp-m');
   const yEl=document.getElementById('dp-y');
@@ -2269,9 +2350,16 @@ async function saveBranchDataToDB(id){
       sup:branch?.sup||'',
       updatedAt:new Date().toISOString()
     },{merge:true});
-    // Step 2: save target for this month using dot notation (merge keeps other months)
-    const targetField=`targets.${yy}_${mm}`;
-    await ref.update({[targetField]:branchTargets[id]||0});
+    // Step 2: save target + monthly cost for this period
+    const periodKey=`${yy}_${mm}`;
+    const targetField=`targets.${periodKey}`;
+    const laborField=`costs.${periodKey}.labor`;
+    const rentField=`costs.${periodKey}.rent`;
+    await ref.update({
+      [targetField]:branchTargets[id]||0,
+      [laborField]:COST[id]?.labor||0,
+      [rentField]:COST[id]?.rent||0
+    });
   }catch(e){console.error('saveBranchDataToDB:',e);}
 }
 
@@ -2326,6 +2414,7 @@ async function loadAllData(){
     await loadUploadLogs();
     lockSelBr(); // re-lock selBr หลัง load เสร็จ ป้องกัน filter overwrite
     loadTargetForPeriod();
+    loadCostForPeriod();
     refreshOverviewOnly();
     if(document.getElementById('v-branches').classList.contains('on')) renderBranchTable();
   }catch(e){console.error('loadAllData error:',e);refresh();}
