@@ -887,7 +887,8 @@ function initForUser(){
   document.querySelectorAll('.nav').forEach(n=>{
     const view=n.getAttribute('onclick')?.match(/go\('(\w+)'/)?.[1];
     if(view&&view!=='overview'){
-      const hasPerm=(CU.perms||[]).includes(view)||CU.role==='admin';
+      const roleAllowsUpload=(view==='upload' && ['admin','supervisor','branch'].includes(CU.role));
+      const hasPerm=(CU.perms||[]).includes(view)||CU.role==='admin'||roleAllowsUpload;
       n.style.display=hasPerm?'':'none';
     }
   });
