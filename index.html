@@ -1679,10 +1679,10 @@ function renderBranchTable(){
   sel=sel.sort((a,b)=>{
     let va,vb;
     if(brSortKey==='name'){va=a.name;vb=b.name;}
-    else{va=getRev(a.id);vb=getRev(b.id);}
+    else{va=getPeriodRevenue(a.id);vb=getPeriodRevenue(b.id);}
     return brSortAsc?(va>vb?1:-1):(va<vb?1:-1);
   });
-  const tot=sel.reduce((s,b)=>s+getRev(b.id),0);
+  const tot=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const canEdit=canEditBranch();
   document.getElementById('br-count-lbl').textContent=`${sel.length} สาขา`;
   const allChk=document.getElementById('chk-all');
@@ -1690,7 +1690,7 @@ function renderBranchTable(){
 
   const tbody=document.getElementById('br-tbody');
   tbody.innerHTML=sel.map((b,i)=>{
-    const rev=getRev(b.id),ord=getOrd(b.id),revPct=tot>0?(rev/tot*100).toFixed(1):0;
+    const rev=getPeriodRevenue(b.id),ord=getPeriodOrd(b.id),revPct=tot>0?(rev/tot*100).toFixed(1):0;
     const rnk=i===0?'r1c':i===1?'r2c':i===2?'r3c':'';
     const c=COST[b.id];
     const totalCost=c.labor+c.rent;
@@ -1782,7 +1782,7 @@ function renderBranchTable(){
 function updateBrSummary(sel){
   const el=document.getElementById('br-summary');
   if(!el) return;
-  const tRev=sel.reduce((s,b)=>s+getRev(b.id),0);
+  const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tCost=sel.reduce((s,b)=>s+COST[b.id].labor+COST[b.id].rent,0);
   const tTgt=sel.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
