@@ -244,7 +244,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
 .tsw input:checked+.tsl::before{transform:translateX(15px);background:#fff}
 
 /* cost KPI mini */
-.cost-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:11px}
+.cost-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;margin-bottom:11px}
 .ckpi{background:var(--c0);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .ck-lbl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
 .ck-val{font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace}
@@ -411,7 +411,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
     <!-- ═══ OVERVIEW ═══ -->
     <div id="v-overview" class="view on">
       <!-- Main KPI -->
-      <div class="kg" id="kpi-main"></div>
+      <div class="kg kg5" id="kpi-main"></div>
 
       <!-- Target bar -->
       <div class="panel" style="margin-bottom:11px" id="tgt-panel">
@@ -516,6 +516,23 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
         <button class="rtab" onclick="setBT('bigc',this)">Big C</button>
         <button class="rtab" onclick="setBT('other',this)">อื่นๆ</button>
       </div>
+      <div class="panel" id="branch-admin-panel" style="display:none;margin-bottom:11px">
+        <div class="ph"><span class="pt">เพิ่มสาขาใหม่</span><span class="pbadge">Admin</span></div>
+        <div class="frow" style="grid-template-columns:.8fr 1.4fr 1fr 1fr 1fr;align-items:end">
+          <div class="fg"><label>Code</label><input id="new-br-id" placeholder="เช่น cnew"></div>
+          <div class="fg"><label>ชื่อสาขา</label><input id="new-br-name" placeholder="ชื่อสาขา"></div>
+          <div class="fg"><label>แบรนด์</label><select id="new-br-brand"><option value="central">Central</option><option value="robinson">Robinson</option><option value="lotus">Lotus</option><option value="bigc">Big C</option><option value="other">อื่นๆ</option></select></div>
+          <div class="fg"><label>ภูมิภาค</label><select id="new-br-region"><option value="bkk">กรุงเทพฯ</option><option value="central_region">ภาคกลาง</option><option value="north">เหนือ</option><option value="northeast">อีสาน</option><option value="south">ใต้</option><option value="east">ตะวันออก</option></select></div>
+          <div class="fg"><label>ผู้ดูแล</label><select id="new-br-sup"></select></div>
+        </div>
+        <div class="frow" style="grid-template-columns:1fr 1fr 1fr auto;align-items:end">
+          <div class="fg"><label>สูตรค่าเช่า</label><select id="new-br-rent-type"><option value="manual">กรอกเอง</option><option value="minimum">มิน/ไหลตาม 28%</option><option value="fixed">ฟิกซ์ทุกเดือน</option></select></div>
+          <div class="fg"><label>ยอดขั้นต่ำ</label><input id="new-br-rent-min" type="number" placeholder="0"></div>
+          <div class="fg"><label>ค่าเช่าฟิกซ์</label><input id="new-br-rent-fixed" type="number" placeholder="0"></div>
+          <button class="btn btn-accent btn-sm" onclick="addBranchFromForm()">+ เพิ่มสาขา</button>
+        </div>
+        <div id="branch-admin-msg" style="font-size:12px;color:var(--tx3);min-height:16px"></div>
+      </div>
       <div class="panel">
         <div class="ph">
           <span class="pt">รายชื่อสาขา</span>
@@ -532,9 +549,9 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
             <th>Code</th><th>แบรนด์</th><th>ผู้ดูแล</th>
             <th class="sort" onclick="brSort('rev')">ยอดขาย ↕</th>
             <th>งาน</th>
-            <th>ค่าแรง (฿)</th><th>ค่าเช่า (฿)</th>
-            <th>ต้นทุน %</th>
-            <th>เป้า (฿)</th><th>% เป้า</th>
+            <th>ค่าแรง (฿)</th><th>ค่าเช่า (฿)</th><th>ค่าบริการ (฿)</th>
+            <th>รวมต้นทุน (฿)</th><th>ต้นทุน %</th>
+            <th>เป้า (฿)</th><th>% เป้า</th><th>บันทึก</th><th>ลบ</th>
           </tr></thead>
           <tbody id="br-tbody"></tbody>
         </table></div>
@@ -545,8 +562,8 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
     <!-- ═══ UPLOAD ═══ -->
     <div id="v-upload" class="view">
       <div class="alert al-info"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <div>อัปโหลดไฟล์ Excel รายวัน (dailyReport_YYYY-MM-DD.xlsx) · ระบบอ่าน <strong>สถานะใบงาน / ราคารวม / บริการ</strong> อัตโนมัติ<br>
-        เฉพาะรายการ <strong>เสร็จงาน</strong> เท่านั้น · บริการที่มีคำว่า Package: มูลค่า &gt; 0 = ซื้อ Package, มูลค่า 0 = ใช้ Package</div>
+        <div>อัปโหลดไฟล์ Excel รายวัน (dailyReport_YYYY-MM-DD.xlsx) · ระบบอ่าน <strong>สถานะใบงาน / ราคารวม / บริการ / เวลาเริ่มงาน / เวลาเสร็จงาน</strong> อัตโนมัติ<br>
+        เฉพาะรายการ <strong>เสร็จงาน</strong> เท่านั้น · จัดกลุ่มเป็น ซื้อบัตร / ใช้บัตร / ฟรี 0 บาท / รายการล้างรถ / อื่นๆ</div>
       </div>
       <div class="panel" style="margin-bottom:11px">
         <div class="ph"><span class="pt">อัปโหลดไฟล์ Excel</span></div>
@@ -652,7 +669,7 @@ let db=null;
 // ═══════════════════════════════════════════════════════
 // BRANCH MASTER — 53 สาขา จากไฟล์ Excel
 // ═══════════════════════════════════════════════════════
-const BR = [
+let BR = [
   {id:'cpr2',name:'เซ็นทรัลพระราม 2',sup:'Sup Da',brand:'central',region:'bkk'},
   {id:'cpr3',name:'เซ็นทรัลพระราม 3',sup:'Sup Best',brand:'central',region:'bkk'},
   {id:'cpg',name:'เซ็นทรัลปิ่นเกล้า',sup:'Sup Best',brand:'central',region:'bkk'},
@@ -709,13 +726,20 @@ const BR = [
 ];
 // Sheet name → branch id mapping (for Excel auto-detect)
 const SHEET_TO_ID = {};
-BR.forEach(b=>{ SHEET_TO_ID[b.name]=b.id; SHEET_TO_ID[b.id]=b.id; });
 // Strip ALL spaces for fuzzy match
 function stripSpaces(s){return String(s).replace(/\s/g,'').toLowerCase();}
 const SHEET_STRIPPED={};
-BR.forEach(b=>{SHEET_STRIPPED[stripSpaces(b.name)]=b.id;SHEET_STRIPPED[stripSpaces(b.id)]=b.id;});
 
 const NAME_MAP={'พระราม9':'cpr9','พระราม 9':'cpr9','เซ็นทรัล พระราม9':'cpr9','เซ็นทรัลพระราม9':'cpr9','เซ็นทรัลพระราม 9':'cpr9','ลาดพร้าว':'cla','เซ็นทรัลลาดพร้าว':'cla','เวสเกสต์':'ctwg','ปิ่นเกล้า':'cpg','อุดรฯ':'cud','พระราม2':'cpr2','พระราม3':'cpr3','ศาลายา':'csly','สกลนคร':'rsk','ร้อยเอ็ด':'rret','มุกดาหาร':'mbh','สยาม':'sy','CT.พาร์ค':'cdst','CT.พาร์ค2':'cdst2','เซ็นทรัลพาร์ค2':'cdst2'};
+function rebuildBranchMaps(){
+  Object.keys(SHEET_TO_ID).forEach(k=>delete SHEET_TO_ID[k]);
+  Object.keys(SHEET_STRIPPED).forEach(k=>delete SHEET_STRIPPED[k]);
+  BR.forEach(b=>{
+    SHEET_TO_ID[b.name]=b.id; SHEET_TO_ID[b.id]=b.id;
+    SHEET_STRIPPED[stripSpaces(b.name)]=b.id; SHEET_STRIPPED[stripSpaces(b.id)]=b.id;
+  });
+}
+rebuildBranchMaps();
 
 function detectBranchFromSheet(sheetName){
   if(!sheetName) return null;
@@ -754,6 +778,7 @@ const DAILY={};
 const D1R={};
 const DAILY_EXTRA={}; // key = "YYYY-MM-DD_brId" e.g. "2026-04-24_cpr9"
 const DAILY_CARS={};  // key = "YYYY-MM-DD_brId" — จำนวนรถรายวัน
+const DAILY_RENT_BASE={}; // key = "YYYY-MM-DD_brId" — revenue used for rent formula, excluding service charge rows
 function getDR(d,id){
   // Build full date key from current period context
   const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
@@ -766,16 +791,46 @@ function getDR(d,id){
 }
 
 // menu / category
-const CATS=[{cat:'Package (ซื้อ)',rev:0,ord:0},{cat:'Package (ใช้)',rev:0,ord:0},{cat:'ล้างรถ',rev:0,ord:0},{cat:'บริการ',rev:0,ord:0},{cat:'Promotion',rev:0,ord:0},{cat:'Set Menu',rev:0,ord:0},{cat:'องค์กร',rev:0,ord:0},{cat:'งานช่าง',rev:0,ord:0},{cat:'Premium',rev:0,ord:0},{cat:'Free/Voucher',rev:0,ord:0}];
+const SERVICE_CATS=['ซื้อบัตร','ใช้บัตร','ฟรี 0 บาท','รายการล้างรถ','อื่นๆ'];
+const CATS=SERVICE_CATS.map(cat=>({cat,rev:0,ord:0}));
 const SIZES=[{s:'L',r:0},{s:'M',r:0},{s:'XL',r:0}];
 
 // cost & targets
 const COST={};
-BR.forEach(b=>{COST[b.id]={labor:0,rent:0};}); // labor=ค่าแรง, rent=ค่าเช่า
-const branchMonthlyCosts={}; // {brId: {'YYYY_MM': {labor,rent}}}
+BR.forEach(b=>{COST[b.id]={labor:0,rent:0,service:0};}); // labor=ค่าแรง, rent=ค่าเช่า, service=ค่าบริการ
+const branchMonthlyCosts={}; // {brId: {'YYYY_MM': {labor,rent,service}}}
 const branchTargets={};
 BR.forEach(b=>{branchTargets[b.id]=0;});
 const branchMonthlyTargets={}; // เก็บเป้าแยกปี+เดือน เช่น {cla: {'2026_04': 500000}}
+const RENT_RULE={}; // {brId:{type:'manual'|'minimum'|'fixed',min,fixed,rate}}
+BR.forEach(b=>{RENT_RULE[b.id]={type:'manual',min:0,fixed:0,rate:28};});
+
+function ensureBranchState(b){
+  if(!b||!b.id) return;
+  if(!DATA[b.id]) DATA[b.id]={revByYear:{2026:0,2025:0},ordByYear:{2026:0,2025:0},carsByYear:{2026:0},newByYear:{2026:0}};
+  if(!COST[b.id]) COST[b.id]={labor:0,rent:0,service:0};
+  if(COST[b.id].service===undefined) COST[b.id].service=0;
+  if(branchTargets[b.id]===undefined) branchTargets[b.id]=0;
+  if(!RENT_RULE[b.id]) RENT_RULE[b.id]={type:'manual',min:0,fixed:0,rate:28};
+}
+function getBranchCostTotal(id){
+  const c=COST[id]||{};
+  return (+c.labor||0)+(+c.rent||0)+(+c.service||0);
+}
+function pctLimitColor(pct,limit){
+  const n=parseFloat(pct);
+  if(!Number.isFinite(n)) return 'var(--tx3)';
+  return n>limit?'var(--red)':'var(--green)';
+}
+function laborPctColor(pct){return pctLimitColor(pct,30);}
+function rentPctColor(pct){return pctLimitColor(pct,28);}
+function totalCostPctColor(pct){return pctLimitColor(pct,58);}
+function removeBranchState(id){
+  delete DATA[id]; delete COST[id]; delete branchTargets[id]; delete branchMonthlyCosts[id]; delete branchMonthlyTargets[id]; delete RENT_RULE[id];
+  Object.keys(DAILY_EXTRA).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_EXTRA[k];});
+  Object.keys(DAILY_CARS).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_CARS[k];});
+  Object.keys(DAILY_RENT_BASE).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_RENT_BASE[k];});
+}
 
 // Imported data store (per branch per day)
 const IMPORTED={}; // key = brId, value = {date, rows, revenue, cars, buy_pkg, use_pkg, services}
@@ -821,15 +876,35 @@ function sumObj(o){return Object.values(o||{}).reduce((s,v)=>s+(+v||0),0);}
 function getRev(id){const d=DATA[id]||{};return CY==='all'?sumObj(d.revByYear):(+d.revByYear?.[CY]||0);}
 function getOrd(id){const d=DATA[id]||{};return CY==='all'?sumObj(d.ordByYear):(+d.ordByYear?.[CY]||0);}
 function getSel(){return BR.filter(b=>selBr.has(b.id));}
-function isPackage(svc){const s=svc.toLowerCase();return s.includes('package')||s.includes('เล่มที่')||s.includes('เลขที่ :');}
+function isPackage(svc){const s=String(svc||'').toLowerCase();return s.includes('package')||s.includes('บัตร')||s.includes('card')||s.includes('เล่มที่')||s.includes('เลขที่ :');}
 function classifyService(svc,price){
-  if(isPackage(svc)) return price>0?'buy_pkg':'use_pkg';
-  const s=svc.toLowerCase();
+  const s=String(svc||'').toLowerCase();
   if(s.includes('ล้างรถ')) return 'wash';
-  if(s.includes('protect film')) return 'protect';
-  if(s.includes('crystal')) return 'crystal';
-  if(s.includes('voucher')||s.includes('gift')) return 'voucher';
+  if(isPackage(svc)) return price>0?'buy_pkg':'use_pkg';
+  if((+price||0)===0) return 'free_zero';
   return 'other_svc';
+}
+function normalizeSvcCat(cat){
+  const s=String(cat||'').toLowerCase();
+  if(s.includes('ซื้อ')||s.includes('buy')) return 'ซื้อบัตร';
+  if(s.includes('ใช้')||s.includes('use')) return 'ใช้บัตร';
+  if(s.includes('ฟรี')||s.includes('free')||s.includes('voucher')||s.includes('gift')) return 'ฟรี 0 บาท';
+  if(s.includes('ล้างรถ')||s.includes('wash')) return 'รายการล้างรถ';
+  return 'อื่นๆ';
+}
+function normalizeSvcBreak(raw){
+  const out={};
+  Object.entries(raw||{}).forEach(([cat,d])=>{
+    const key=normalizeSvcCat(cat);
+    if(!out[key]) out[key]={rev:0,count:0};
+    out[key].rev+=(+d.rev||0);
+    out[key].count+=(+d.count||+d.ord||0);
+  });
+  return out;
+}
+function isServiceChargeRow(svc){
+  const s=String(svc||'').toLowerCase();
+  return s.includes('ค่าบริการ')||s.includes('service charge')||s.includes('service fee');
 }
 
 // ── AUTH ──
@@ -893,6 +968,7 @@ function initForUser(){
     }
   });
   document.getElementById('nav-users').style.display=CU.role==='admin'?'':'none';
+  renderBranchAdminControls();
 
   // Hide sidebar filters based on role
   const lockFilters=CU.role==='branch';
@@ -938,6 +1014,13 @@ function initForUser(){
   scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light'); // แสดงกราฟเปล่าก่อน
   loadAllData(); // โหลดข้อมูลจาก Firebase แล้ว refresh อีกรอบ
   if(CU.role==='admin') renderUsers();
+}
+
+function renderBranchAdminControls(){
+  const panel=document.getElementById('branch-admin-panel');
+  if(panel) panel.style.display=(CU&&CU.role==='admin')?'':'none';
+  const supSel=document.getElementById('new-br-sup');
+  if(supSel) supSel.innerHTML=SUPS.map(s=>`<option value="${s}">${s}</option>`).join('');
 }
 
 // Lock selBr based on role — call this after any data load
@@ -1082,6 +1165,53 @@ function getPeriodRevenue(id){
     return s+(DAILY_EXTRA[key]||DAILY_EXTRA[`${d}_${id}`]||0);
   },0);
 }
+function getPeriodRentBase(id){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
+  if(mode==='year'){
+    const keys=Object.keys(DAILY_RENT_BASE).filter(k=>k.startsWith(`${yr}-`)&&k.endsWith(`_${id}`));
+    const total=keys.reduce((s,k)=>s+DAILY_RENT_BASE[k],0);
+    return keys.length?total:getPeriodRevenue(id);
+  }
+  const mEl=document.getElementById('dp-m');
+  const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+  const days=getPeriodDays();
+  let hasBase=false;
+  const total=days.reduce((s,d)=>{
+    const dd=String(d).padStart(2,'0');
+    const key=`${yr}-${mm}-${dd}_${id}`;
+    if(Object.prototype.hasOwnProperty.call(DAILY_RENT_BASE,key)) hasBase=true;
+    return s+(DAILY_RENT_BASE[key]||0);
+  },0);
+  return hasBase?total:getPeriodRevenue(id);
+}
+function calcBranchRent(id,revBase=getPeriodRentBase(id)){
+  const rule=RENT_RULE[id]||{type:'manual',min:0,fixed:0,rate:28};
+  if(rule.type==='fixed') return +rule.fixed||0;
+  if(rule.type==='minimum'){
+    const base=Math.max(+revBase||0,+rule.min||0);
+    return Math.round(base*((+rule.rate||28)/100));
+  }
+  return COST[id]?.rent||0;
+}
+function getRentBasisLabel(id,revBase=getPeriodRentBase(id)){
+  const rule=RENT_RULE[id]||{type:'manual',min:0,fixed:0,rate:28};
+  if(rule.type==='minimum'){
+    const min=+rule.min||0;
+    const base=+revBase||0;
+    return base<=min?`คิดจากมิน ${fmt(min)}`:`คิดจากยอดจริง ${fmt(base)}`;
+  }
+  if(rule.type==='fixed') return `ฟิกซ์ ${fmt(+rule.fixed||0)}`;
+  return `กรอกเอง`;
+}
+function syncFormulaRentForBranch(id){
+  if(!COST[id]) return;
+  const rule=RENT_RULE[id]||{type:'manual'};
+  if(rule.type!=='manual') COST[id].rent=calcBranchRent(id);
+}
+function syncFormulaRents(){
+  BR.forEach(b=>syncFormulaRentForBranch(b.id));
+}
 
 // Count cars (เสร็จงาน) for the selected period from UPLOG
 function getPeriodCars(id){
@@ -1145,13 +1275,17 @@ function scheduleRefresh(scope='all'){
 }
 function refresh(scope='all'){
   const sel=getSel();
+  syncFormulaRents();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
   const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
+  const workStats=getPeriodWorkStats(sel);
+  const avgWork=workStats.count?workStats.minutes/workStats.count:null;
   // cost
-  const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
+  const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
+  const costKpiClass=tCost>0?(parseFloat(costPct)>58?'r':'g'):'g';
   const gp=tRev-tCost;
 
   // YoY (always compare full-month เปรียบเทียบรายปี)
@@ -1164,8 +1298,9 @@ function refresh(scope='all'){
   document.getElementById('kpi-main').innerHTML=`
     <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
+    <div class="kpi t"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">${workStats.count?fN(workStats.count)+' งาน':'ยังไม่มีเวลา'}</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
-    <div class="kpi ${costPct>60?'r':costPct>40?'a':'g'}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
+    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
 
   const brL=sel.length===BR.length?'ทุกสาขา':sel.length<=2?sel.map(b=>b.id).join(', '):`${sel.length} สาขา`;
   document.getElementById('ftag').textContent=`${periodLabel} · ${brL}`;
@@ -1188,31 +1323,42 @@ function refresh(scope='all'){
 
 function updateCostOv(sel,tRev,tCost,costPct,gp){
   const hasCost=tCost>0;
-  const labor=sel.reduce((s,b)=>s+COST[b.id].labor,0);
-  const rent=sel.reduce((s,b)=>s+COST[b.id].rent,0);
+  const labor=sel.reduce((s,b)=>s+(COST[b.id]?.labor||0),0);
+  const rent=sel.reduce((s,b)=>s+(COST[b.id]?.rent||0),0);
+  const service=sel.reduce((s,b)=>s+(COST[b.id]?.service||0),0);
+  const rentService=rent+service;
   const laborPct=tRev>0?(labor/tRev*100).toFixed(1):0;
   const rentPct=tRev>0?(rent/tRev*100).toFixed(1):0;
+  const servicePct=tRev>0?(service/tRev*100).toFixed(1):0;
+  const rentServicePct=tRev>0?(rentService/tRev*100).toFixed(1):0;
+  const laborColor=laborPctColor(laborPct);
+  const rentColor=rentPctColor(rentServicePct);
+  const totalColor=totalCostPctColor(costPct);
 
   document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุน ${getCostPeriodLabel()} · ${costPct}% ของยอดขาย`:`ยังไม่กรอกต้นทุน (${getCostPeriodLabel()})`; 
-  document.getElementById('cost-ov-badge').style.background=hasCost?(costPct<=40?'rgba(34,197,94,.15)':costPct<=60?'rgba(245,158,11,.15)':'rgba(239,68,68,.15)'):'';
-  document.getElementById('cost-ov-badge').style.color=hasCost?(costPct<=40?'#86efac':costPct<=60?'#fcd34d':'#fca5a5'):'';
+  document.getElementById('cost-ov-badge').style.background=hasCost?(parseFloat(costPct)>58?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)'):'';
+  document.getElementById('cost-ov-badge').style.color=hasCost?(parseFloat(costPct)>58?'#fca5a5':'#86efac'):'';
   const barEl=document.getElementById('cost-ov-bar-wrap');
   const ck=document.getElementById('cost-ov-kpi');
   ck.innerHTML=`
     <div class="ckpi">
       <div class="ck-lbl">ค่าแรง</div>
       <div class="ck-val">${hasCost&&labor>0?fmt(labor):'—'}</div>
-      ${hasCost&&labor>0?`<div style="font-size:10px;color:var(--amber);margin-top:3px">${laborPct}% ของรายได้</div>`:''}
+      ${hasCost&&labor>0?`<div style="font-size:10px;color:${laborColor};margin-top:3px">${laborPct}% ของรายได้</div>`:''}
     </div>
     <div class="ckpi">
       <div class="ck-lbl">ค่าเช่า</div>
       <div class="ck-val">${hasCost&&rent>0?fmt(rent):'—'}</div>
-      ${hasCost&&rent>0?`<div style="font-size:10px;color:var(--purple);margin-top:3px">${rentPct}% ของรายได้</div>`:''}
+      ${hasCost&&rentService>0?`<div style="font-size:10px;color:${rentColor};margin-top:3px">${rentServicePct}% ค่าเช่า+ค่าบริการ</div>`:''}
+    </div>
+    <div class="ckpi">
+      <div class="ck-lbl">ค่าบริการ</div>
+      <div class="ck-val">${hasCost&&service>0?fmt(service):'—'}</div>
     </div>
     <div class="ckpi">
       <div class="ck-lbl">ต้นทุนรวม</div>
       <div class="ck-val">${hasCost?fmt(tCost):'—'}</div>
-      ${hasCost?`<div style="font-size:10px;color:${costPct<=40?'var(--green)':costPct<=60?'var(--amber)':'var(--red)'};margin-top:3px">${costPct}% ของรายได้</div>`:''}
+      ${hasCost?`<div style="font-size:10px;color:${totalColor};margin-top:3px">${costPct}% ของรายได้</div>`:''}
     </div>
     <div class="ckpi">
       <div class="ck-lbl">กำไรขั้นต้น</div>
@@ -1220,20 +1366,22 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
     </div>
     <div class="ckpi">
       <div class="ck-lbl">Gross Margin</div>
-      <div class="ck-val" style="color:${hasCost?(costPct<=40?'var(--green)':costPct<=60?'var(--amber)':'var(--red)'):'var(--tx3)'}">${hasCost?(100-parseFloat(costPct)).toFixed(1)+'%':'—'}</div>
+      <div class="ck-val" style="color:${hasCost?totalColor:'var(--tx3)'}">${hasCost?(100-parseFloat(costPct)).toFixed(1)+'%':'—'}</div>
     </div>`;
   if(hasCost){
     barEl.style.display='block';
-    // Stacked bar: labor (amber) + rent (purple) + profit (dark)
+    // Stacked bar: labor (amber) + rent (purple) + service (teal) + profit (dark)
     document.getElementById('cost-ov-bar-wrap').innerHTML=`
       <div style="font-size:11px;color:var(--tx3);margin-bottom:4px">สัดส่วนต้นทุน / ยอดขาย</div>
       <div style="background:var(--c0);border-radius:6px;height:12px;overflow:hidden;margin-bottom:5px;display:flex">
         <div style="width:${Math.min(laborPct,100)}%;background:var(--amber);height:100%;transition:width .5s" title="ค่าแรง ${laborPct}%"></div>
         <div style="width:${Math.min(rentPct,Math.max(0,100-laborPct))}%;background:var(--purple);height:100%;transition:width .5s" title="ค่าเช่า ${rentPct}%"></div>
+        <div style="width:${Math.min(servicePct,Math.max(0,100-laborPct-rentPct))}%;background:var(--teal);height:100%;transition:width .5s" title="ค่าบริการ ${servicePct}%"></div>
       </div>
       <div style="display:flex;gap:12px;font-size:10.5px;flex-wrap:wrap">
         <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--amber);border-radius:2px;display:inline-block"></span>ค่าแรง ${laborPct}%</span>
         <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--purple);border-radius:2px;display:inline-block"></span>ค่าเช่า ${rentPct}%</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--teal);border-radius:2px;display:inline-block"></span>ค่าบริการ ${servicePct}%</span>
         <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--c2);border:1px solid var(--border2);border-radius:2px;display:inline-block"></span>กำไร ${(100-parseFloat(costPct)).toFixed(1)}%</span>
       </div>`;
   } else { barEl.style.display='none'; }
@@ -1478,10 +1626,12 @@ function drawMenuOv(){
   const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
   const selDays=new Set(getPeriodDays().map(d=>String(d).padStart(2,'0')));
   const allDays=periodDays.length===0; // no specific days = whole month or year
+  const selIds=new Set(getSel().map(b=>String(b.id)));
 
   function buildCatsFromLog(yr){
     const cats={};
     UPLOG.forEach(l=>{
+      if(!selIds.has(String(l.brId))) return;
       if(l.year&&l.year!==yr) return;
       // Filter by month (skip for year mode)
       if(mode!=='year'&&l.date&&l.date.slice(5,7)!==mm) return;
@@ -1492,7 +1642,7 @@ function drawMenuOv(){
         include=Object.keys(l.dayRevMap).some(dateKey=>selDays.has(dateKey.slice(8,10)));
       }
       if(!include) return;
-      Object.entries(l.svcBreak||{}).forEach(([cat,d])=>{
+      Object.entries(normalizeSvcBreak(l.svcBreak)).forEach(([cat,d])=>{
         if(!cats[cat]) cats[cat]={cat,rev:0,ord:0};
         cats[cat].rev+=d.rev;
         cats[cat].ord+=d.count;
@@ -1506,10 +1656,15 @@ function drawMenuOv(){
   const hasOther=Object.values(otherCats).some(c=>menuOvMode==='rev'?c.rev>0:c.ord>0);
 
   // Union all category names, sort by current year value
-  const allCatNames=[...new Set([...Object.keys(curCats),...Object.keys(otherCats)])];
+  const allCatNames=[...new Set([...SERVICE_CATS,...Object.keys(curCats),...Object.keys(otherCats)])];
   const sorted=allCatNames
     .filter(name=>menuOvMode==='rev'?(curCats[name]?.rev||0)+(otherCats[name]?.rev||0)>0:(curCats[name]?.ord||0)+(otherCats[name]?.ord||0)>0)
-    .sort((a,b)=>menuOvMode==='rev'?(curCats[b]?.rev||0)-(curCats[a]?.rev||0):(curCats[b]?.ord||0)-(curCats[a]?.ord||0));
+    .sort((a,b)=>{
+      const va=menuOvMode==='rev'?(curCats[a]?.rev||0):(curCats[a]?.ord||0);
+      const vb=menuOvMode==='rev'?(curCats[b]?.rev||0):(curCats[b]?.ord||0);
+      if(vb!==va) return vb-va;
+      return SERVICE_CATS.indexOf(a)-SERVICE_CATS.indexOf(b);
+    });
 
   if(!sorted.length){
     const el=document.getElementById('ch-menu-ov');
@@ -1647,12 +1802,16 @@ function renderDailyTable(){
 // ── LIGHTWEIGHT REFRESH (no chart redraw — used when typing in inputs) ──
 function refreshOverviewOnly(){
   const sel=getSel();
+  syncFormulaRents();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
   const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
-  const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
+  const workStats=getPeriodWorkStats(sel);
+  const avgWork=workStats.count?workStats.minutes/workStats.count:null;
+  const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
+  const costKpiClass=tCost>0?(parseFloat(costPct)>58?'r':'g'):'g';
   const gp=tRev-tCost;
   const ys=getKnownYears(); const y0=ys[0]||getLatestYear(); const y1=ys[1]||y0-1;
   const v0=sel.reduce((s,b)=>s+((DATA[b.id].revByYear||{})[y0]||0),0);
@@ -1662,8 +1821,9 @@ function refreshOverviewOnly(){
   if(kpiEl) kpiEl.innerHTML=`
     <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
+    <div class="kpi t"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">${workStats.count?fN(workStats.count)+' งาน':'ยังไม่มีเวลา'}</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
-    <div class="kpi ${costPct>60?'r':costPct>40?'a':'g'}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
+    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
   renderForecast(tRev);
@@ -1676,6 +1836,52 @@ function brSort(key){if(brSortKey===key)brSortAsc=!brSortAsc;else{brSortKey=key;
 function brToggleAll(v){document.querySelectorAll('#br-tbody .bchk').forEach(c=>{c.checked=v;const id=c.dataset.id;if(v)selBr.add(id);else selBr.delete(id);});scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 function brSelectAll(){document.getElementById('chk-all').checked=true;brToggleAll(true);}
 function brSelectNone(){document.getElementById('chk-all').checked=false;brToggleAll(false);}
+function addBranchFromForm(){
+  if(!(CU&&CU.role==='admin')) return;
+  const msg=document.getElementById('branch-admin-msg');
+  const id=String(document.getElementById('new-br-id').value||'').trim().toLowerCase().replace(/\s+/g,'');
+  const name=String(document.getElementById('new-br-name').value||'').trim();
+  if(!id||!name){if(msg)msg.textContent='กรุณากรอก Code และชื่อสาขา';return;}
+  if(!/^[a-z0-9_-]+$/.test(id)){if(msg)msg.textContent='Code ใช้ได้เฉพาะ a-z, 0-9, _ และ -';return;}
+  if(BR.some(b=>String(b.id)===id)){if(msg)msg.textContent='Code นี้มีอยู่แล้ว';return;}
+  const branch={
+    id,name,
+    brand:document.getElementById('new-br-brand').value,
+    region:document.getElementById('new-br-region').value,
+    sup:document.getElementById('new-br-sup').value
+  };
+  BR.push(branch);
+  ensureBranchState(branch);
+  RENT_RULE[id]={
+    type:document.getElementById('new-br-rent-type').value,
+    min:parseFloat(document.getElementById('new-br-rent-min').value)||0,
+    fixed:parseFloat(document.getElementById('new-br-rent-fixed').value)||0,
+    rate:28
+  };
+  rebuildBranchMaps();
+  selBr.add(id);
+  saveBranchMaster();
+  saveBranchDataToDB(id);
+  document.getElementById('new-br-id').value='';
+  document.getElementById('new-br-name').value='';
+  if(msg) msg.textContent=`เพิ่มสาขา ${name} แล้ว`;
+  buildBcList();renderBranchTable();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
+function deleteBranch(id){
+  if(!(CU&&CU.role==='admin')) return;
+  const branch=BR.find(b=>String(b.id)===String(id));
+  if(!branch) return;
+  const hasLogs=UPLOG.some(l=>String(l.brId)===String(id));
+  const extra=hasLogs?' สาขานี้มีประวัติอัปโหลดเดิมอยู่ ข้อมูลอัปโหลดจะไม่ถูกลบจาก Firebase แต่จะไม่แสดงใน master list':'';
+  if(!confirm(`ยืนยันลบสาขา "${branch.name}" (${branch.id})?${extra}`)) return;
+  BR=BR.filter(b=>String(b.id)!==String(id));
+  selBr.delete(id);
+  removeBranchState(id);
+  rebuildBranchMaps();
+  saveBranchMaster();
+  if(db) db.collection('branch_data').doc(String(id)).delete().catch(e=>console.error('delete branch_data:',e));
+  buildBcList();renderBranchTable();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
 
 function renderBranchTable(){
   let sel=getSel();
@@ -1696,12 +1902,18 @@ function renderBranchTable(){
   tbody.innerHTML=sel.map((b,i)=>{
     const rev=getPeriodRevenue(b.id),ord=getPeriodOrd(b.id),revPct=tot>0?(rev/tot*100).toFixed(1):0;
     const rnk=i===0?'r1c':i===1?'r2c':i===2?'r3c':'';
+    ensureBranchState(b);
+    syncFormulaRentForBranch(b.id);
     const c=COST[b.id];
-    const totalCost=c.labor+c.rent;
+    const rentRule=RENT_RULE[b.id]||{type:'manual',min:0,fixed:0,rate:28};
+    const totalCost=getBranchCostTotal(b.id);
+    const rentService=(+c.rent||0)+(+c.service||0);
     const laborPct=rev>0?(c.labor/rev*100).toFixed(1):'—';
-    const rentPct=rev>0?(c.rent/rev*100).toFixed(1):'—';
+    const rentServicePct=rev>0?(rentService/rev*100).toFixed(1):'—';
     const costPct=rev>0?(totalCost/rev*100).toFixed(1):'—';
-    const costColor=totalCost===0?'var(--tx3)':parseFloat(costPct)<=40?'var(--green)':parseFloat(costPct)<=60?'var(--amber)':'var(--red)';
+    const laborColor=laborPctColor(laborPct);
+    const rentColor=rentPctColor(rentServicePct);
+    const costColor=totalCost===0?'var(--tx3)':totalCostPctColor(costPct);
     const tgt=branchTargets[b.id]||0;
     const tgtPct=tgt>0?Math.min((rev/tgt*100),999).toFixed(1):0;
     const tgtColor=tgt===0?'var(--tx3)':tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)';
@@ -1709,20 +1921,44 @@ function renderBranchTable(){
     const laborInp=canEdit
       ?`<div>
           <input class="cinp br-labor" data-id="${b.id}" style="width:88px" type="number" value="${c.labor||''}" placeholder="0">
-          ${c.labor>0&&rev>0?`<div style="font-size:9.5px;color:var(--amber);margin-top:2px">${laborPct}% ของรายได้</div>`:''}
+          <div class="br-labor-pct" style="display:${c.labor>0&&rev>0?'block':'none'};font-size:9.5px;color:${laborColor};margin-top:2px">${c.labor>0&&rev>0?laborPct+'% ของรายได้':''}</div>
         </div>`
       :`<span class="mono">${c.labor>0?fmt(c.labor):'—'}</span>`;
     const rentInp=canEdit
       ?`<div>
-          <input class="cinp br-rent" data-id="${b.id}" style="width:88px" type="number" value="${c.rent||''}" placeholder="0">
-          ${c.rent>0&&rev>0?`<div style="font-size:9.5px;color:var(--purple);margin-top:2px">${rentPct}% ของรายได้</div>`:''}
+          <select class="cinp br-rent-type" data-id="${b.id}" style="width:122px;margin-bottom:4px;font-size:10.5px;padding:3px 5px">
+            <option value="manual" ${rentRule.type==='manual'?'selected':''}>กรอกเอง</option>
+            <option value="minimum" ${rentRule.type==='minimum'?'selected':''}>มิน/ไหลตาม 28%</option>
+            <option value="fixed" ${rentRule.type==='fixed'?'selected':''}>ฟิกซ์</option>
+          </select>
+          ${rentRule.type==='minimum'
+            ?`<input class="cinp br-rent-min" data-id="${b.id}" style="width:122px" type="number" value="${rentRule.min||''}" placeholder="ยอดมิน">
+              <div style="font-size:9.5px;color:var(--tx3);margin-top:4px">ค่าเช่าจริงหลังเทียบมิน</div>
+              <input class="cinp br-rent-final" data-id="${b.id}" style="width:122px;color:var(--purple)" type="text" value="${fmt(c.rent||0)}" readonly>`
+            :rentRule.type==='fixed'
+              ?`<input class="cinp br-rent-fixed" data-id="${b.id}" style="width:122px" type="number" value="${rentRule.fixed||''}" placeholder="ค่าเช่าฟิกซ์">`
+              :`<input class="cinp br-rent" data-id="${b.id}" style="width:122px" type="number" value="${c.rent||''}" placeholder="0">`}
+          <div class="br-rent-amount" style="font-size:9.5px;color:var(--purple);margin-top:2px">ค่าเช่า ${fmt(c.rent||0)}</div>
+          <div class="br-rent-service-pct" style="display:${rentService>0&&rev>0?'block':'none'};font-size:9.5px;color:${rentColor};margin-top:2px">${rentService>0&&rev>0?rentServicePct+'% ของรายได้':''}</div>
         </div>`
       :`<span class="mono">${c.rent>0?fmt(c.rent):'—'}</span>`;
+    const serviceInp=canEdit
+      ?`<div>
+          <input class="cinp br-service" data-id="${b.id}" style="width:88px" type="number" value="${c.service||''}" placeholder="0">
+          <div class="br-rent-service-pct" style="display:${rentService>0&&rev>0?'block':'none'};font-size:9.5px;color:${rentColor};margin-top:2px">${rentService>0&&rev>0?rentServicePct+'% ของรายได้':''}</div>
+        </div>`
+      :`<span class="mono">${c.service>0?fmt(c.service):'—'}</span>`;
     const tgtInp=canEdit
       ?`<input class="cinp br-tgt" data-id="${b.id}" style="width:95px" type="number" value="${tgt||''}" placeholder="0">`
       :`<span class="mono">${tgt>0?fmt(tgt):'—'}</span>`;
+    const saveBtn=canEdit
+      ?`<button class="save-confirm sc-idle br-save" data-id="${b.id}" type="button">บันทึก</button>`
+      :'—';
+    const deleteBtn=CU?.role==='admin'
+      ?`<button class="btn btn-red btn-xs" type="button" onclick="deleteBranch('${b.id}')">ลบ</button>`
+      :'—';
 
-    const supCell=CU.role==='admin'
+    const supCell=CU?.role==='admin'
       ?`<select class="cinp br-sup" data-id="${b.id}" style="width:95px;font-size:11px;padding:2px 4px">
           ${SUPS.map(s=>`<option value="${s}" ${b.sup===s?'selected':''}>${s}</option>`).join('')}
         </select>`
@@ -1738,9 +1974,13 @@ function renderBranchTable(){
       <td class="mono" style="font-size:11px">${fN(ord)}</td>
       <td>${laborInp}</td>
       <td>${rentInp}</td>
-      <td style="font-size:11.5px;font-weight:600;color:${costColor};font-family:'IBM Plex Mono',monospace">${totalCost>0?costPct+'%':'—'}</td>
+      <td>${serviceInp}</td>
+      <td class="mono br-total-cost" data-id="${b.id}" style="font-size:11.5px;font-weight:600;color:${costColor}">${totalCost>0?fmt(totalCost):'—'}</td>
+      <td class="br-cost-pct" data-id="${b.id}" style="font-size:11.5px;font-weight:600;color:${costColor};font-family:'IBM Plex Mono',monospace">${totalCost>0?costPct+'%':'—'}</td>
       <td>${tgtInp}</td>
       <td style="font-size:11.5px;font-weight:600;color:${tgtColor};font-family:'IBM Plex Mono',monospace">${tgt>0?tgtPct+'%':'—'}</td>
+      <td>${saveBtn}</td>
+      <td>${deleteBtn}</td>
     </tr>`;
   }).join('');
 
@@ -1749,30 +1989,48 @@ function renderBranchTable(){
     const inp=e.target;
     const id=inp.dataset.id;
     if(!id) return;
+    if(!(inp.classList.contains('br-labor')||inp.classList.contains('br-rent')||inp.classList.contains('br-rent-min')||inp.classList.contains('br-rent-fixed')||inp.classList.contains('br-service')||inp.classList.contains('br-tgt'))) return;
     const v=parseFloat(inp.value)||0;
     if(inp.classList.contains('br-labor')){
       COST[id].labor=v;
     } else if(inp.classList.contains('br-rent')){
       COST[id].rent=v;
+      RENT_RULE[id]={...(RENT_RULE[id]||{}),type:'manual',rate:28};
+    } else if(inp.classList.contains('br-rent-min')){
+      RENT_RULE[id]={...(RENT_RULE[id]||{}),type:'minimum',min:v,rate:28};
+      syncFormulaRentForBranch(id);
+    } else if(inp.classList.contains('br-rent-fixed')){
+      RENT_RULE[id]={...(RENT_RULE[id]||{}),type:'fixed',fixed:v,rate:28};
+      syncFormulaRentForBranch(id);
+    } else if(inp.classList.contains('br-service')){
+      COST[id].service=v;
     } else if(inp.classList.contains('br-tgt')){
       branchTargets[id]=v;
     }
+    const finalInp=inp.closest('td')?.querySelector('.br-rent-final');
+    if(finalInp) finalInp.value=fmt(COST[id]?.rent||0);
+    updateBranchCostCells(inp.closest('tr'),id);
     // Update overview only — don't re-render table (would lose focus)
     refreshOverviewOnly();
     updateBrSummary(sel);
+    markBranchSaveDirty(id);
   };
-  // Save to Firebase when field loses focus (focusout bubbles, onblur does not)
-  tbody.addEventListener('focusout', function(e){
-    const inp=e.target;
-    const id=inp.dataset.id;
-    if(id&&(inp.classList.contains('br-labor')||inp.classList.contains('br-rent')||inp.classList.contains('br-tgt'))){
-      saveBranchDataToDB(id);
-    }
-  });
+  tbody.onclick=function(e){
+    const btn=e.target.closest('.br-save');
+    if(btn) saveBranchRow(btn.dataset.id,btn);
+  };
   // Supervisor change
   tbody.onchange=function(e){
     const sel2=e.target;
     const id=sel2.dataset.id;
+    if(id&&sel2.classList.contains('br-rent-type')){
+      RENT_RULE[id]={...(RENT_RULE[id]||{}),type:sel2.value,rate:28};
+      syncFormulaRentForBranch(id);
+      markBranchSaveDirty(id);
+      renderBranchTable();
+      refreshOverviewOnly();
+      return;
+    }
     if(!id||!sel2.classList.contains('br-sup')) return;
     const branch=BR.find(b=>b.id===id);
     if(branch) branch.sup=sel2.value;
@@ -1783,15 +2041,84 @@ function renderBranchTable(){
   updateBrSummary(sel);
 }
 
+function updateBranchCostCells(row,id){
+  if(!row||!id) return;
+  const rev=getPeriodRevenue(id);
+  const c=COST[id]||{};
+  const labor=+c.labor||0;
+  const rent=+c.rent||0;
+  const service=+c.service||0;
+  const rentService=rent+service;
+  const totalCost=getBranchCostTotal(id);
+  const laborPct=rev>0?(labor/rev*100).toFixed(1):'—';
+  const rentServicePct=rev>0?(rentService/rev*100).toFixed(1):'—';
+  const costPct=rev>0?(totalCost/rev*100).toFixed(1):'—';
+  const laborColor=laborPctColor(laborPct);
+  const rentColor=rentPctColor(rentServicePct);
+  const color=totalCost===0?'var(--tx3)':totalCostPctColor(costPct);
+  const laborPctEl=row.querySelector('.br-labor-pct');
+  const rentAmountEl=row.querySelector('.br-rent-amount');
+  const rentServicePctEls=row.querySelectorAll('.br-rent-service-pct');
+  const totalEl=row.querySelector('.br-total-cost');
+  const pctEl=row.querySelector('.br-cost-pct');
+  if(laborPctEl){
+    const show=labor>0&&rev>0;
+    laborPctEl.style.display=show?'block':'none';
+    laborPctEl.textContent=show?laborPct+'% ของรายได้':'';
+    laborPctEl.style.color=laborColor;
+  }
+  if(rentAmountEl) rentAmountEl.textContent=`ค่าเช่า ${fmt(rent)}`;
+  rentServicePctEls.forEach(rentServicePctEl=>{
+    const show=rentService>0&&rev>0;
+    rentServicePctEl.style.display=show?'block':'none';
+    rentServicePctEl.textContent=show?rentServicePct+'% ของรายได้':'';
+    rentServicePctEl.style.color=rentColor;
+  });
+  if(totalEl){
+    totalEl.textContent=totalCost>0?fmt(totalCost):'—';
+    totalEl.style.color=color;
+  }
+  if(pctEl){
+    pctEl.textContent=totalCost>0?costPct+'%':'—';
+    pctEl.style.color=color;
+  }
+}
+
+function getBranchSaveButton(id){
+  return Array.from(document.querySelectorAll('.br-save')).find(btn=>String(btn.dataset.id)===String(id));
+}
+function markBranchSaveDirty(id){
+  const btn=getBranchSaveButton(id);
+  if(!btn) return;
+  btn.disabled=false;
+  btn.className='save-confirm sc-idle br-save';
+  btn.textContent='บันทึก';
+}
+async function saveBranchRow(id,btn){
+  if(!id) return;
+  const targetBtn=btn||getBranchSaveButton(id);
+  if(targetBtn){
+    targetBtn.disabled=true;
+    targetBtn.className='save-confirm sc-saving br-save';
+    targetBtn.textContent='กำลังบันทึก';
+  }
+  const ok=await saveBranchDataToDB(id);
+  if(targetBtn){
+    targetBtn.className=`save-confirm ${ok?'sc-done':'sc-idle'} br-save`;
+    targetBtn.textContent=ok?'บันทึกแล้ว':'บันทึกไม่ได้';
+    setTimeout(()=>markBranchSaveDirty(id),ok?1400:2200);
+  }
+}
+
 function updateBrSummary(sel){
   const el=document.getElementById('br-summary');
   if(!el) return;
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
-  const tCost=sel.reduce((s,b)=>s+COST[b.id].labor+COST[b.id].rent,0);
+  const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const tTgt=sel.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
   const tgtPct=tTgt>0?(tRev/tTgt*100).toFixed(1):0;
-  const tColor=tCost===0?'var(--tx3)':costPct<=40?'var(--green)':costPct<=60?'var(--amber)':'var(--red)';
+  const tColor=tCost===0?'var(--tx3)':totalCostPctColor(costPct);
   el.innerHTML=`
     <span style="color:var(--tx3)">รวม:</span>
     <span>ยอดขาย <strong class="mono">${fmt(tRev)}</strong></span>
@@ -1811,14 +2138,12 @@ function brCheckChange(id,checked){
 function classifySvc(svc,price){
   const s=String(svc||'');
   const slo=s.toLowerCase();
-  const isPkg=slo.includes('package')||s.includes('เล่มที่')||s.includes('เลขที่ :');
-  if(isPkg) return price>0?'ซื้อ Package':'ใช้ Package';
-  if(slo.includes('ล้างรถ')||slo.includes('crystal wash')) return 'ล้างรถ';
-  if(slo.includes('protect film')) return 'Protect Film';
-  if(slo.includes('crystal')) return 'Crystal';
-  if(slo.includes('voucher')||slo.includes('gift')) return 'Free/Voucher';
-  if(slo.includes('ขัด')||slo.includes('เคลือบ')) return 'งานช่าง';
-  return 'บริการอื่น';
+  const amount=+price||0;
+  if(slo.includes('ล้างรถ')) return 'รายการล้างรถ';
+  const isPkg=slo.includes('package')||slo.includes('บัตร')||slo.includes('card')||s.includes('เล่มที่')||s.includes('เลขที่ :');
+  if(isPkg) return amount>0?'ซื้อบัตร':'ใช้บัตร';
+  if(amount===0) return 'ฟรี 0 บาท';
+  return 'อื่นๆ';
 }
 
 
@@ -1841,6 +2166,86 @@ function parseMoney(v){
   const n=parseFloat(cleaned);
   if(Number.isNaN(n)) return 0;
   return neg?-n:n;
+}
+function parseDateFromRow(r){
+  const raw=String(getField(r,'วันที่เข้าใช้บริการ','เวลาเข้าใช้บริการ')||'');
+  if(!raw) return null;
+  let m=raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m) return {day:parseInt(m[1]),month:parseInt(m[2]),year:parseInt(m[3])};
+  m=raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) return {day:parseInt(m[3]),month:parseInt(m[2]),year:parseInt(m[1])};
+  return null;
+}
+function rowDateKey(r,fileDate){
+  const dt=parseDateFromRow(r);
+  if(dt){
+    const mm=String(dt.month).padStart(2,'0');
+    const dd=String(dt.day).padStart(2,'0');
+    return `${dt.year}-${mm}-${dd}`;
+  }
+  return fileDate||'';
+}
+function parseTimeToMinutes(v){
+  if(v===null||v===undefined||v==='') return null;
+  if(v instanceof Date) return v.getHours()*60+v.getMinutes()+Math.round(v.getSeconds()/60);
+  if(typeof v==='number'){
+    const frac=((v%1)+1)%1;
+    return Math.round(frac*1440)%1440;
+  }
+  const raw=String(v).trim();
+  if(!raw) return null;
+  const cleaned=raw.replace(/\s*น\.?\s*$/,'');
+  const m=cleaned.match(/(\d{1,2})[:.](\d{2})(?::(\d{2}))?/);
+  if(!m) return null;
+  const h=parseInt(m[1]), min=parseInt(m[2]), sec=parseInt(m[3]||'0');
+  if(h>23||min>59||sec>59) return null;
+  return h*60+min+Math.round(sec/60);
+}
+function getWorkDurationMinutes(r){
+  const start=parseTimeToMinutes(getField(r,'เวลาเริ่มงาน','เริ่มงาน','เวลาเริ่ม'));
+  const end=parseTimeToMinutes(getField(r,'เวลาเสร็จงาน','เสร็จงาน','เวลาจบงาน','เวลาสิ้นสุด'));
+  if(start===null||end===null) return null;
+  let diff=end-start;
+  if(diff<0) diff+=1440;
+  return diff>0?diff:null;
+}
+function fmtDuration(mins){
+  if(mins===null||mins===undefined||!Number.isFinite(mins)) return '—';
+  return `${Math.round(mins)} นาที`;
+}
+function dateKeyInCurrentPeriod(dateKey){
+  if(!dateKey) return false;
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  if(CY==='all') return true;
+  const yr=(typeof CY!=='undefined')?CY:getLatestYear();
+  if(!dateKey.startsWith(`${yr}-`)) return false;
+  if(mode==='year') return true;
+  const mEl=document.getElementById('dp-m');
+  const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+  if(dateKey.slice(5,7)!==mm) return false;
+  const daySet=new Set(getPeriodDays().map(d=>String(d).padStart(2,'0')));
+  return daySet.has(dateKey.slice(8,10));
+}
+function getPeriodWorkStats(sel){
+  const ids=new Set(sel.map(b=>String(b.id)));
+  return UPLOG.reduce((acc,l)=>{
+    if(!ids.has(String(l.brId))) return acc;
+    if(l.dayWorkMap){
+      Object.entries(l.dayWorkMap).forEach(([dateKey,d])=>{
+        if(!dateKeyInCurrentPeriod(dateKey)) return;
+        acc.minutes+=(+d.minutes||0);
+        acc.count+=(+d.count||0);
+      });
+    }else if(l.workMinutes&&l.workCount){
+      const yOk=CY==='all'||!l.year||l.year===CY;
+      const mode=document.getElementById('fPeriod')?.value||'month';
+      const mEl=document.getElementById('dp-m');
+      const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+      const mOk=mode==='year'||!l.date||String(l.date).slice(5,7)===mm;
+      if(yOk&&mOk){acc.minutes+=(+l.workMinutes||0);acc.count+=(+l.workCount||0);}
+    }
+    return acc;
+  },{minutes:0,count:0});
 }
 
 function handleDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');handleFile(e.dataTransfer.files[0]);}
@@ -1879,13 +2284,15 @@ function showPreview(rows,fname,sheetName,detectedBrId){
   document.getElementById('prev-badge').textContent=`Sheet: ${sheetName} → สาขา: ${brName}`;
   const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
   const cancelled=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='ยกเลิก');
-  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)`;
+  const workDurations=completed.map(getWorkDurationMinutes).filter(v=>v!==null);
+  const avgWork=workDurations.length?workDurations.reduce((s,v)=>s+v,0)/workDurations.length:null;
+  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${avgWork!==null?' · เวลาเฉลี่ย '+fmtDuration(avgWork):''}`;
   const tbody=document.querySelector('#tbl-prev tbody');
   tbody.innerHTML=completed.map((r,i)=>{
     const price=parseMoney(getField(r,'ราคารวม'));
     const svc=String(getField(r,'บริการ')||'');
     const cat=classifySvc(svc,price);
-    const tagCls=cat==='ซื้อ Package'?'imp-buy-pkg':cat==='ใช้ Package'?'imp-use-pkg':'imp-normal';
+    const tagCls=cat==='ซื้อบัตร'?'imp-buy-pkg':cat==='ใช้บัตร'?'imp-use-pkg':'imp-normal';
     const svcShort=svc.length>45?svc.slice(0,45)+'…':svc;
     return`<tr>
       <td class="mono" style="color:var(--tx3)">${i+1}</td>
@@ -1910,28 +2317,20 @@ function importData(){
   const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
   const totalCars=completed.length;
 
-  // Helper: parse full date {day, month, year} from วันที่เข้าใช้บริการ
-  function parseDateFromRow(r){
-    const raw=String(getField(r,'วันที่เข้าใช้บริการ','เวลาเข้าใช้บริการ')||'');
-    if(!raw) return null;
-    // dd/MM/YYYY or dd/MM/YYYY HH:mm
-    let m=raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if(m) return {day:parseInt(m[1]),month:parseInt(m[2]),year:parseInt(m[3])};
-    // YYYY-MM-DD or YYYY/MM/DD
-    m=raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if(m) return {day:parseInt(m[3]),month:parseInt(m[2]),year:parseInt(m[1])};
-    return null;
-  }
-
   // service breakdown + group by full date YYYY-MM-DD
   const svcBreak={};
   const dayRevMap={};   // key = "YYYY-MM-DD" e.g. "2026-04-24"
   const dayCarMap={};   // key = "YYYY-MM-DD" — นับรถรายวัน
+  const dayRentBaseMap={}; // key = "YYYY-MM-DD" — ยอดฐานค่าเช่า ไม่รวมค่าบริการ
+  const dayWorkMap={};  // key = "YYYY-MM-DD" — {minutes,count}
+  let workMinutes=0;
+  let workCount=0;
   let detectedYear=null;
 
   completed.forEach(r=>{
     const price=parseMoney(getField(r,'ราคารวม'));
-    const cat=classifySvc(String(getField(r,'บริการ')||''),price);
+    const svc=String(getField(r,'บริการ')||'');
+    const cat=classifySvc(svc,price);
     if(!svcBreak[cat])svcBreak[cat]={rev:0,count:0};
     svcBreak[cat].rev+=price;svcBreak[cat].count++;
     const dt=parseDateFromRow(r);
@@ -1943,13 +2342,26 @@ function importData(){
       const key=`${dt.year}-${mm}-${dd}`;
       dayRevMap[key]=(dayRevMap[key]||0)+price;
       dayCarMap[key]=(dayCarMap[key]||0)+1; // นับ 1 คัน/row
+      if(dayRentBaseMap[key]===undefined) dayRentBaseMap[key]=0;
+      if(!isServiceChargeRow(svc)) dayRentBaseMap[key]=(dayRentBaseMap[key]||0)+price;
     } else {
       // fallback: use filename date
       if(fileDate){
         dayRevMap[fileDate]=(dayRevMap[fileDate]||0)+price;
       dayCarMap[fileDate]=(dayCarMap[fileDate]||0)+1;
+        if(dayRentBaseMap[fileDate]===undefined) dayRentBaseMap[fileDate]=0;
+        if(!isServiceChargeRow(svc)) dayRentBaseMap[fileDate]=(dayRentBaseMap[fileDate]||0)+price;
         if(!detectedYear) detectedYear=parseInt(fileDate.slice(0,4));
       }
+    }
+    const dur=getWorkDurationMinutes(r);
+    const dateKey=rowDateKey(r,fileDate);
+    if(dur!==null&&dateKey){
+      workMinutes+=dur;
+      workCount++;
+      if(!dayWorkMap[dateKey]) dayWorkMap[dateKey]={minutes:0,count:0};
+      dayWorkMap[dateKey].minutes+=dur;
+      dayWorkMap[dateKey].count++;
     }
   });
 
@@ -1975,18 +2387,22 @@ function importData(){
   const logDate=firstDate.slice(0,7)||`${yr}-??`; // YYYY-MM
   const ts=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'?';
-  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,year:yr});
+  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,dayRentBaseMap,dayWorkMap,workMinutes,workCount,year:yr});
   // Store daily cars in DAILY_CARS
   if(detectedBrId){
     Object.entries(dayCarMap).forEach(([dateKey,cars])=>{
       const ck=`${dateKey}_${detectedBrId}`;
       DAILY_CARS[ck]=(DAILY_CARS[ck]||0)+cars;
     });
+    Object.entries(dayRentBaseMap).forEach(([dateKey,rev])=>{
+      const rk=`${dateKey}_${detectedBrId}`;
+      DAILY_RENT_BASE[rk]=(DAILY_RENT_BASE[rk]||0)+rev;
+    });
   }
   saveUploadLog(UPLOG[0]); // บันทึกลง Firebase
   renderUpLog();
 
-  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน)`;
+  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน)${workCount?' · เวลาเฉลี่ย '+fmtDuration(workMinutes/workCount):''}`;
   PENDING=null;
   setTimeout(()=>{
     document.getElementById('prev-wrap').style.display='none';
@@ -2021,12 +2437,12 @@ function renderUpLog(){
   el.innerHTML=paged.map(l=>{
     const i=l._i;
     const canDelete=CU&&(CU.role==='admin'||CU.role==='supervisor'||l.brId===CU.scope);
-    const svcHTML=Object.entries(l.svcBreak||{}).map(([cat,d])=>`<span class="imp-tag ${cat.includes('ซื้อ')?'imp-buy-pkg':cat.includes('ใช้')?'imp-use-pkg':'imp-normal'}" style="margin-right:3px">${cat}: ${d.count} (${fmt(d.rev)})</span>`).join('');
+    const svcHTML=Object.entries(normalizeSvcBreak(l.svcBreak)).map(([cat,d])=>`<span class="imp-tag ${cat.includes('ซื้อ')?'imp-buy-pkg':cat.includes('ใช้')?'imp-use-pkg':'imp-normal'}" style="margin-right:3px">${cat}: ${d.count} (${fmt(d.rev)})</span>`).join('');
     return`<div class="le" style="grid-template-columns:auto 1fr;flex-direction:column;gap:5px;align-items:flex-start">
       <div style="display:flex;align-items:center;gap:8px;width:100%">
         <div class="ldot" style="background:var(--green)"></div>
         <div style="flex:1"><div style="font-size:13px;font-weight:500">${l.name}</div>
-        <div style="font-size:11px;color:var(--tx3)">${l.branch} · ${l.date} · ${l.cars} คัน · ${fmt(l.rev)}</div></div>
+        <div style="font-size:11px;color:var(--tx3)">${l.branch} · ${l.date} · ${l.cars} คัน · ${fmt(l.rev)}${l.workCount?' · เวลาเฉลี่ย '+fmtDuration(l.workMinutes/l.workCount):''}</div></div>
         <div class="lt">${l.ts}</div>
         ${canDelete?`<button onclick="deleteUpload(${i})" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);cursor:pointer;font-size:11px;padding:3px 9px;font-family:inherit" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='var(--red)'">ลบ</button>`:''}
       </div>
@@ -2049,6 +2465,11 @@ function deleteUpload(i){
           const ck=`${dateKey}_${l.brId}`;
           DAILY_CARS[ck]=Math.max(0,(DAILY_CARS[ck]||0)-l.dayCarMap[dateKey]);
           if(DAILY_CARS[ck]===0) delete DAILY_CARS[ck];
+        }
+        if(l.dayRentBaseMap&&l.dayRentBaseMap[dateKey]){
+          const rk=`${dateKey}_${l.brId}`;
+          DAILY_RENT_BASE[rk]=Math.max(0,(DAILY_RENT_BASE[rk]||0)-l.dayRentBaseMap[dateKey]);
+          if(DAILY_RENT_BASE[rk]===0) delete DAILY_RENT_BASE[rk];
         }
       });
     } else if(l.day){
@@ -2242,6 +2663,7 @@ async function loadUploadLogs(){
     // Reset DATA and DAILY_EXTRA before restoring from Firebase
     Object.keys(DAILY_EXTRA).forEach(k=>delete DAILY_EXTRA[k]);
     Object.keys(DAILY_CARS).forEach(k=>delete DAILY_CARS[k]);
+    Object.keys(DAILY_RENT_BASE).forEach(k=>delete DAILY_RENT_BASE[k]);
     BR.forEach(b=>{DATA[b.id].revByYear={};DATA[b.id].ordByYear={};DATA[b.id].carsByYear={};});
     snap.forEach(doc=>{
       const d=doc.data();
@@ -2259,6 +2681,17 @@ async function loadUploadLogs(){
           Object.entries(d.dayCarMap).forEach(([dateKey,cars])=>{
             const ck=`${dateKey}_${d.brId}`;
             DAILY_CARS[ck]=(DAILY_CARS[ck]||0)+cars;
+          });
+        }
+        if(d.dayRentBaseMap){
+          Object.entries(d.dayRentBaseMap).forEach(([dateKey,rev])=>{
+            const rk=`${dateKey}_${d.brId}`;
+            DAILY_RENT_BASE[rk]=(DAILY_RENT_BASE[rk]||0)+rev;
+          });
+        }else{
+          Object.entries(d.dayRevMap).forEach(([dateKey,rev])=>{
+            const rk=`${dateKey}_${d.brId}`;
+            DAILY_RENT_BASE[rk]=(DAILY_RENT_BASE[rk]||0)+rev;
           });
         }
       }
@@ -2287,6 +2720,41 @@ async function saveUploadLog(logObj){
 }
 
 // ── BRANCH DATA (cost + target) ──
+async function loadBranchMaster(){
+  if(!db) return;
+  try{
+    const doc=await db.collection('settings').doc('branches').get();
+    if(doc.exists){
+      const items=doc.data()?.items;
+      if(Array.isArray(items)&&items.length){
+        BR=items
+          .filter(b=>b&&b.id&&b.name)
+          .map(b=>({
+            id:String(b.id),
+            name:String(b.name),
+            sup:b.sup||SUPS[0],
+            brand:b.brand||'other',
+            region:b.region||'bkk'
+          }));
+        BR.forEach(ensureBranchState);
+        rebuildBranchMaps();
+        renderBranchAdminControls();
+        buildBcList();
+      }
+    }
+  }catch(e){console.error('loadBranchMaster:',e);}
+}
+async function saveBranchMaster(){
+  if(!db) return false;
+  try{
+    await db.collection('settings').doc('branches').set({
+      items:BR.map(b=>({id:b.id,name:b.name,sup:b.sup,brand:b.brand,region:b.region})),
+      updatedAt:new Date().toISOString()
+    },{merge:true});
+    return true;
+  }catch(e){console.error('saveBranchMaster:',e);return false;}
+}
+
 async function loadBranchData(){
   if(!db) return;
   try{
@@ -2299,15 +2767,19 @@ async function loadBranchData(){
       const d=doc.data();
       // restore cost (monthly + backward compatibility)
       const curKey=`${yy}_${mm}`;
+      if(d.rentRule) RENT_RULE[id]={type:d.rentRule.type||'manual',min:+d.rentRule.min||0,fixed:+d.rentRule.fixed||0,rate:+d.rentRule.rate||28};
       if(d.costs) branchMonthlyCosts[id]=d.costs;
       if(COST[id]){
         if(d.costs&&d.costs[curKey]){
           COST[id].labor=d.costs[curKey].labor||0;
           COST[id].rent=d.costs[curKey].rent||0;
+          COST[id].service=d.costs[curKey].service||0;
         } else {
           COST[id].labor=d.labor||0;
           COST[id].rent=d.rent||0;
+          COST[id].service=d.service||0;
         }
+        syncFormulaRentForBranch(id);
       }
       // restore supervisor
       const branch=BR.find(b=>b.id===id);
@@ -2339,9 +2811,11 @@ function loadCostForPeriod(){
     if(monthly&&monthly[key]){
       COST[b.id].labor=monthly[key].labor||0;
       COST[b.id].rent=monthly[key].rent||0;
+      COST[b.id].service=monthly[key].service||0;
     }else if(monthly){
-      COST[b.id].labor=0; COST[b.id].rent=0;
+      COST[b.id].labor=0; COST[b.id].rent=0; COST[b.id].service=0;
     }
+    syncFormulaRentForBranch(b.id);
   });
 }
 
@@ -2363,7 +2837,7 @@ function loadTargetForPeriod(){
 }
 
 async function saveBranchDataToDB(id){
-  if(!db) return;
+  if(!db) return false;
   try{
     const mEl=document.getElementById('dp-m');
     const yEl=document.getElementById('dp-y');
@@ -2375,6 +2849,8 @@ async function saveBranchDataToDB(id){
     await ref.set({
       labor:COST[id]?.labor||0,
       rent:COST[id]?.rent||0,
+      service:COST[id]?.service||0,
+      rentRule:RENT_RULE[id]||{type:'manual',min:0,fixed:0,rate:28},
       sup:branch?.sup||'',
       updatedAt:new Date().toISOString()
     },{merge:true});
@@ -2383,12 +2859,21 @@ async function saveBranchDataToDB(id){
     const targetField=`targets.${periodKey}`;
     const laborField=`costs.${periodKey}.labor`;
     const rentField=`costs.${periodKey}.rent`;
+    const serviceField=`costs.${periodKey}.service`;
+    if(!branchMonthlyCosts[id]) branchMonthlyCosts[id]={};
+    branchMonthlyCosts[id][periodKey]={
+      labor:COST[id]?.labor||0,
+      rent:COST[id]?.rent||0,
+      service:COST[id]?.service||0
+    };
     await ref.update({
       [targetField]:branchTargets[id]||0,
       [laborField]:COST[id]?.labor||0,
-      [rentField]:COST[id]?.rent||0
+      [rentField]:COST[id]?.rent||0,
+      [serviceField]:COST[id]?.service||0
     });
-  }catch(e){console.error('saveBranchDataToDB:',e);}
+    return true;
+  }catch(e){console.error('saveBranchDataToDB:',e);return false;}
 }
 
 // ── USERS ──
@@ -2438,6 +2923,7 @@ async function deleteUserFromDB(uid){
 // ── INIT ALL FIREBASE DATA ──
 async function loadAllData(){
   try{
+    await loadBranchMaster();
     await Promise.all([loadBranchData(),loadUsersFromDB()]);
     await loadUploadLogs();
     lockSelBr(); // re-lock selBr หลัง load เสร็จ ป้องกัน filter overwrite
