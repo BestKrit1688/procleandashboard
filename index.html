@@ -756,7 +756,7 @@ const DAILY_EXTRA={}; // key = "YYYY-MM-DD_brId" e.g. "2026-04-24_cpr9"
 const DAILY_CARS={};  // key = "YYYY-MM-DD_brId" — จำนวนรถรายวัน
 function getDR(d,id){
   // Build full date key from current period context
-  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
   const mEl=document.getElementById('dp-m');
   const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
   const dd=String(d).padStart(2,'0');
@@ -772,6 +772,7 @@ const SIZES=[{s:'L',r:0},{s:'M',r:0},{s:'XL',r:0}];
 // cost & targets
 const COST={};
 BR.forEach(b=>{COST[b.id]={labor:0,rent:0};}); // labor=ค่าแรง, rent=ค่าเช่า
+const branchMonthlyCosts={}; // {brId: {'YYYY_MM': {labor,rent}}}
 const branchTargets={};
 BR.forEach(b=>{branchTargets[b.id]=0;});
 const branchMonthlyTargets={}; // เก็บเป้าแยกปี+เดือน เช่น {cla: {'2026_04': 500000}}
@@ -796,7 +797,7 @@ const LOCAL_USERS=[
 let USERS=[...LOCAL_USERS];
 let nextUid=2;
 let CU=null; // current user
-const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches'],branch:['overview','daily'],readonly:['overview','daily']};
+const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],readonly:['overview','daily']};
 function normalizeUser(u){if(!u) return u; const role=u.role||'readonly'; const base=ROLE_BASE_PERMS[role]||ROLE_BASE_PERMS.readonly; return {...u,perms:[...new Set(base)]};}
 function canUpload(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='branch');}
 function canEditBranch(){return CU&&(CU.role==='admin'||CU.role==='supervisor');}
@@ -886,7 +887,8 @@ function initForUser(){
   document.querySelectorAll('.nav').forEach(n=>{
     const view=n.getAttribute('onclick')?.match(/go\('(\w+)'/)?.[1];
     if(view&&view!=='overview'){
-      const hasPerm=(CU.perms||[]).includes(view)||CU.role==='admin';
+      const roleAllowsUpload=(view==='upload' && ['admin','supervisor','branch'].includes(CU.role));
+      const hasPerm=(CU.perms||[]).includes(view)||CU.role==='admin'||roleAllowsUpload;
       n.style.display=hasPerm?'':'none';
     }
   });
@@ -933,7 +935,7 @@ function initForUser(){
 
   buildBcList();
   mobInitNav();
-  refresh(); // แสดงกราฟเปล่าก่อน
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light'); // แสดงกราฟเปล่าก่อน
   loadAllData(); // โหลดข้อมูลจาก Firebase แล้ว refresh อีกรอบ
   if(CU.role==='admin') renderUsers();
 }
@@ -985,16 +987,16 @@ function bcToggle(id,checked,labelEl){
   if(CU.role==='branch') return;
   if(checked){selBr.add(id);labelEl.classList.add('on');}
   else{selBr.delete(id);labelEl.classList.remove('on');}
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function toggleBr(id,el){
   if(CU.role==='branch') return; // locked
   if(selBr.has(id)){selBr.delete(id);el.classList.remove('on');}else{selBr.add(id);el.classList.add('on');}
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
-function selAll(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.add(b.id));buildBcList();refresh();}
-function selNone(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.delete(b.id));buildBcList();refresh();}
-function applyYear(){CY=document.getElementById('fYear')?.value==='all'?'all':parseInt(document.getElementById('fYear')?.value||getLatestYear());refresh();}
+function selAll(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.add(b.id));buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
+function selNone(){if(CU.role==='branch') return;getFilteredPool().forEach(b=>selBr.delete(b.id));buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
+function applyYear(){CY=document.getElementById('fYear')?.value==='all'?'all':parseInt(document.getElementById('fYear')?.value||getLatestYear());scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 
 // ── PERIOD PICKER ──
 let periodDays=[]; // empty = all days; filled = specific days to sum
@@ -1047,14 +1049,24 @@ function applyPeriod(){
     const yr=document.getElementById('dp-yr').value;
     CY=yr==='all'?'all':parseInt(yr);
     periodDays=[];
-    periodLabel=yr==='all'?'2025+2026':String(yr);
+    periodLabel=yr==='all'?'ทุกปี':String(yr);
   }
   loadTargetForPeriod(); // โหลดเป้าของเดือน/ปีที่เลือก
-  refresh();
+  loadCostForPeriod();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
+function getCostPeriodLabel(){
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  const mN=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  if(!mEl||!yEl) return '';
+  const m=Math.max(1,Math.min(12,parseInt(mEl.value)||1));
+  return `${mN[m-1]} ${yEl.value}`;
+}
+
 function getPeriodRevenue(id){
   const mode=document.getElementById('fPeriod')?.value||'month';
-  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
   // For year mode: sum all months
   if(mode==='year'){
     return Object.keys(DAILY_EXTRA)
@@ -1074,7 +1086,7 @@ function getPeriodRevenue(id){
 // Count cars (เสร็จงาน) for the selected period from UPLOG
 function getPeriodCars(id){
   const mode=document.getElementById('fPeriod')?.value||'month';
-  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:2026;
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
   // year mode: sum all months
   if(mode==='year'){
     return Object.keys(DAILY_CARS)
@@ -1103,29 +1115,39 @@ function applyBrand(){
   const pool=getFilteredPool();
   if(CU.role==='supervisor') selBr=new Set(pool.map(b=>b.id));
   else selBr=new Set(pool.map(b=>b.id));
-  buildBcList();refresh();
+  buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function applyRegion(){
   if(CU.role==='branch') return;
   activeRegion=document.getElementById('fRegion').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
-  buildBcList();refresh();
+  buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function applySup(){
   if(CU.role==='branch'||CU.role==='supervisor') return; // locked
   activeSup=document.getElementById('fSup').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
-  buildBcList(); refresh();
+  buildBcList(); scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 // ── MAIN REFRESH ──
-function refresh(){
+let ACTIVE_VIEW='overview';
+let _rf=null,_rfScope='all';
+function scheduleRefresh(scope='all'){
+  _rfScope=scope;
+  if(_rf) return;
+  _rf=requestAnimationFrame(()=>{
+    const sc=_rfScope; _rf=null; _rfScope='all';
+    refresh(sc);
+  });
+}
+function refresh(scope='all'){
   const sel=getSel();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
-  const tNew=sel.reduce((s,b)=>s+DATA[b.id].new26,0);
+  const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
   // cost
   const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
@@ -1153,13 +1175,15 @@ function refresh(){
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
   renderForecast(tRev);
-  drawDailyChart();
-  drawBranchChart();
-  drawBrandChart();
-  drawSizeChart();
-  drawCmpChart();
-  drawSupChart();
-  drawMenuOv();
+  if(scope==='all' || scope==='overview'){
+    drawDailyChart();
+    drawBranchChart();
+    drawBrandChart();
+    drawSizeChart();
+    drawCmpChart();
+    drawSupChart();
+    drawMenuOv();
+  }
 }
 
 function updateCostOv(sel,tRev,tCost,costPct,gp){
@@ -1169,7 +1193,7 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
   const laborPct=tRev>0?(labor/tRev*100).toFixed(1):0;
   const rentPct=tRev>0?(rent/tRev*100).toFixed(1):0;
 
-  document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุนรวม ${costPct}% ของยอดขาย`:'ยังไม่กรอกต้นทุน';
+  document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุน ${getCostPeriodLabel()} · ${costPct}% ของยอดขาย`:`ยังไม่กรอกต้นทุน (${getCostPeriodLabel()})`; 
   document.getElementById('cost-ov-badge').style.background=hasCost?(costPct<=40?'rgba(34,197,94,.15)':costPct<=60?'rgba(245,158,11,.15)':'rgba(239,68,68,.15)'):'';
   document.getElementById('cost-ov-badge').style.color=hasCost?(costPct<=40?'#86efac':costPct<=60?'#fcd34d':'#fca5a5'):'';
   const barEl=document.getElementById('cost-ov-bar-wrap');
@@ -1339,8 +1363,9 @@ function drawDailyChart(){
   dc('daily');
   const days=getPeriodDays();
   const sel=getSel();
-  const curYr=CY==='all'?2026:(CY||2026);
-  const otherYr=curYr===2026?2025:2026;
+  const yrs=getKnownYears();
+  const curYr=CY==='all'?(yrs[0]||getLatestYear()):(CY||getLatestYear());
+  const otherYr=yrs.find(y=>y!==curYr)||(curYr-1);
   const mEl=document.getElementById('dp-m');
   const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
   const ds=[];
@@ -1443,8 +1468,9 @@ function drawSupChart(){
 function setMenuOv(mode,el){menuOvMode=mode;document.querySelectorAll('#v-overview .rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');drawMenuOv();}
 function drawMenuOv(){
   dc('menu-ov');
-  const curYr=CY==='all'?2026:(CY||2026);
-  const otherYr=curYr===2026?2025:2026;
+  const yrs=getKnownYears();
+  const curYr=CY==='all'?(yrs[0]||getLatestYear()):(CY||getLatestYear());
+  const otherYr=yrs.find(y=>y!==curYr)||(curYr-1);
 
   // Build cats filtered by period (year + month + selected days)
   const mode=document.getElementById('fPeriod')?.value||'month';
@@ -1550,8 +1576,9 @@ function renderDailyTable(){
   // ── Chart ──
   dc('daily2');
   const top5=getSel().sort((a,b)=>getPeriodRevenue(b.id)-getPeriodRevenue(a.id)).slice(0,5);
-  const curYr=CY==='all'?2026:(CY||2026);
-  const otherYr=curYr===2026?2025:2026;
+  const yrs=getKnownYears();
+  const curYr=CY==='all'?(yrs[0]||getLatestYear()):(CY||getLatestYear());
+  const otherYr=yrs.find(y=>y!==curYr)||(curYr-1);
   const mEl=document.getElementById('dp-m');
   const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
 
@@ -1622,7 +1649,7 @@ function refreshOverviewOnly(){
   const sel=getSel();
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
-  const tNew=sel.reduce((s,b)=>s+DATA[b.id].new26,0);
+  const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
   const tCost=sel.reduce((s,b)=>{const c=COST[b.id];return s+c.labor+c.rent;},0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
@@ -1646,7 +1673,7 @@ function refreshOverviewOnly(){
 let brBrandFilter='all';
 function setBT(brand,el){brBrandFilter=brand;document.querySelectorAll('#br-tabs .rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderBranchTable();}
 function brSort(key){if(brSortKey===key)brSortAsc=!brSortAsc;else{brSortKey=key;brSortAsc=false;}renderBranchTable();}
-function brToggleAll(v){document.querySelectorAll('#br-tbody .bchk').forEach(c=>{c.checked=v;const id=c.dataset.id;if(v)selBr.add(id);else selBr.delete(id);});refresh();}
+function brToggleAll(v){document.querySelectorAll('#br-tbody .bchk').forEach(c=>{c.checked=v;const id=c.dataset.id;if(v)selBr.add(id);else selBr.delete(id);});scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 function brSelectAll(){document.getElementById('chk-all').checked=true;brToggleAll(true);}
 function brSelectNone(){document.getElementById('chk-all').checked=false;brToggleAll(false);}
 
@@ -1656,10 +1683,10 @@ function renderBranchTable(){
   sel=sel.sort((a,b)=>{
     let va,vb;
     if(brSortKey==='name'){va=a.name;vb=b.name;}
-    else{va=getRev(a.id);vb=getRev(b.id);}
+    else{va=getPeriodRevenue(a.id);vb=getPeriodRevenue(b.id);}
     return brSortAsc?(va>vb?1:-1):(va<vb?1:-1);
   });
-  const tot=sel.reduce((s,b)=>s+getRev(b.id),0);
+  const tot=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const canEdit=canEditBranch();
   document.getElementById('br-count-lbl').textContent=`${sel.length} สาขา`;
   const allChk=document.getElementById('chk-all');
@@ -1667,7 +1694,7 @@ function renderBranchTable(){
 
   const tbody=document.getElementById('br-tbody');
   tbody.innerHTML=sel.map((b,i)=>{
-    const rev=getRev(b.id),ord=getOrd(b.id),revPct=tot>0?(rev/tot*100).toFixed(1):0;
+    const rev=getPeriodRevenue(b.id),ord=getPeriodOrd(b.id),revPct=tot>0?(rev/tot*100).toFixed(1):0;
     const rnk=i===0?'r1c':i===1?'r2c':i===2?'r3c':'';
     const c=COST[b.id];
     const totalCost=c.labor+c.rent;
@@ -1759,7 +1786,7 @@ function renderBranchTable(){
 function updateBrSummary(sel){
   const el=document.getElementById('br-summary');
   if(!el) return;
-  const tRev=sel.reduce((s,b)=>s+getRev(b.id),0);
+  const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tCost=sel.reduce((s,b)=>s+COST[b.id].labor+COST[b.id].rent,0);
   const tTgt=sel.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
   const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
@@ -1768,13 +1795,13 @@ function updateBrSummary(sel){
   el.innerHTML=`
     <span style="color:var(--tx3)">รวม:</span>
     <span>ยอดขาย <strong class="mono">${fmt(tRev)}</strong></span>
-    <span>ต้นทุน <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+costPct+'%)':'—'}</strong></span>
+    <span>ต้นทุน (${getCostPeriodLabel()}) <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+costPct+'%)':'—'}</strong></span>
     <span>เป้า <strong class="mono">${tTgt>0?fmt(tTgt):'—'}</strong></span>
     ${tTgt>0?`<span style="color:${tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)'}">%เป้า <strong class="mono">${tgtPct}%</strong></span>`:''}`;
 }
 function brCheckChange(id,checked){
   if(checked)selBr.add(id);else selBr.delete(id);
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
   // sync sidebar bc-list
   buildBcList();
 }
@@ -1794,6 +1821,28 @@ function classifySvc(svc,price){
   return 'บริการอื่น';
 }
 
+
+function normText(v){return String(v??'').trim();}
+function getField(row,...keys){
+  const rowKeys=Object.keys(row||{});
+  for(const k of keys){
+    const exact=row[k]; if(exact!==undefined) return exact;
+    const found=rowKeys.find(rk=>String(rk).trim()===k);
+    if(found!==undefined) return row[found];
+  }
+  return '';
+}
+function parseMoney(v){
+  if(typeof v==='number') return v;
+  const t=normText(v);
+  if(!t) return 0;
+  const neg=t.startsWith('(')&&t.endsWith(')');
+  const cleaned=t.replace(/[(),฿\s]/g,'').replace(/,/g,'');
+  const n=parseFloat(cleaned);
+  if(Number.isNaN(n)) return 0;
+  return neg?-n:n;
+}
+
 function handleDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');handleFile(e.dataTransfer.files[0]);}
 function handleFile(file){
   if(!file) return;
@@ -1808,6 +1857,10 @@ function handleFile(file){
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       // detect branch from sheet name
       const detectedBrId=detectBranchFromSheet(sheetName);
+      if(CU&&CU.role==='branch'){
+        if(!detectedBrId){alert('ไม่สามารถระบุสาขาจากชื่อชีตได้ (ผู้ใช้สาขาต้องอัปโหลดไฟล์สาขาตัวเอง)');return;}
+        if(String(detectedBrId)!==String(CU.scope)){alert('สิทธิ์ไม่อนุญาต: อัปโหลดได้เฉพาะไฟล์ของสาขาตัวเองเท่านั้น');return;}
+      }
       // detect date from filename
       const dateMatch=file.name.match(/(\d{4}-\d{2}-\d{2})/);
       const fileDate=dateMatch?dateMatch[1]:new Date().toISOString().split('T')[0];
@@ -1824,13 +1877,13 @@ function showPreview(rows,fname,sheetName,detectedBrId){
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'ตรวจไม่พบ (กรุณาตรวจสอบ)';
   document.getElementById('prev-title').textContent=`Preview: ${fname}`;
   document.getElementById('prev-badge').textContent=`Sheet: ${sheetName} → สาขา: ${brName}`;
-  const completed=rows.filter(r=>r['สถานะใบงาน']==='เสร็จงาน');
-  const cancelled=rows.filter(r=>r['สถานะใบงาน']==='ยกเลิก');
+  const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
+  const cancelled=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='ยกเลิก');
   document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)`;
   const tbody=document.querySelector('#tbl-prev tbody');
   tbody.innerHTML=completed.map((r,i)=>{
-    const price=parseFloat(r['ราคารวม'])||0;
-    const svc=String(r['บริการ']||'');
+    const price=parseMoney(getField(r,'ราคารวม'));
+    const svc=String(getField(r,'บริการ')||'');
     const cat=classifySvc(svc,price);
     const tagCls=cat==='ซื้อ Package'?'imp-buy-pkg':cat==='ใช้ Package'?'imp-use-pkg':'imp-normal';
     const svcShort=svc.length>45?svc.slice(0,45)+'…':svc;
@@ -1850,12 +1903,16 @@ function importData(){
   if(!canUpload()) return;
   if(!PENDING) return;
   const {rows,name,detectedBrId,fileDate}=PENDING;
-  const completed=rows.filter(r=>r['สถานะใบงาน']==='เสร็จงาน');
+  if(CU&&CU.role==='branch'&&String(detectedBrId)!==String(CU.scope)){
+    alert('สิทธิ์ไม่อนุญาต: อัปโหลดได้เฉพาะข้อมูลสาขาตัวเอง');
+    return;
+  }
+  const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
   const totalCars=completed.length;
 
   // Helper: parse full date {day, month, year} from วันที่เข้าใช้บริการ
   function parseDateFromRow(r){
-    const raw=String(r['วันที่เข้าใช้บริการ']||r['เวลาเข้าใช้บริการ']||'');
+    const raw=String(getField(r,'วันที่เข้าใช้บริการ','เวลาเข้าใช้บริการ')||'');
     if(!raw) return null;
     // dd/MM/YYYY or dd/MM/YYYY HH:mm
     let m=raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
@@ -1873,8 +1930,8 @@ function importData(){
   let detectedYear=null;
 
   completed.forEach(r=>{
-    const price=parseFloat(r['ราคารวม'])||0;
-    const cat=classifySvc(String(r['บริการ']||''),price);
+    const price=parseMoney(getField(r,'ราคารวม'));
+    const cat=classifySvc(String(getField(r,'บริการ')||''),price);
     if(!svcBreak[cat])svcBreak[cat]={rev:0,count:0};
     svcBreak[cat].rev+=price;svcBreak[cat].count++;
     const dt=parseDateFromRow(r);
@@ -1896,7 +1953,7 @@ function importData(){
     }
   });
 
-  const totalRev=completed.reduce((s,r)=>s+(parseFloat(r['ราคารวม'])||0),0);
+  const totalRev=completed.reduce((s,r)=>s+parseMoney(getField(r,'ราคารวม')),0);
   const yr=detectedYear||new Date().getFullYear();
 
   // Update DAILY_EXTRA per day with full date key YYYY-MM-DD_brId
@@ -1935,7 +1992,7 @@ function importData(){
     document.getElementById('prev-wrap').style.display='none';
     document.getElementById('finp').value='';
   },3000);
-  refresh();
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 function cancelPrev(){PENDING=null;document.getElementById('prev-wrap').style.display='none';document.getElementById('finp').value='';}
@@ -2009,7 +2066,7 @@ function deleteUpload(i){
     db.collection('upload_logs').doc(l._docId).delete()
       .catch(e=>console.error('deleteUpload Firebase:',e));
   }
-  UPLOG.splice(i,1);renderUpLog();refresh();
+  UPLOG.splice(i,1);renderUpLog();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 // ── USER MANAGEMENT ──
@@ -2108,28 +2165,32 @@ function delUser(uid){
 // ── NAV ──
 const PG_TITLES={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
 function go(view,el){
+  ACTIVE_VIEW=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.getElementById('v-'+view).classList.add('on');
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('pgtitle').textContent=PG_TITLES[view]||view;
-  refresh();
-  if(view==='daily') renderDailyTable();
-  if(view==='branches') renderBranchTable();
-  if(view==='users') renderUsers();
+  if(view==='overview') scheduleRefresh('overview');
+  else scheduleRefresh('light');
+  if(view==='daily') requestAnimationFrame(()=>renderDailyTable());
+  if(view==='branches') requestAnimationFrame(()=>renderBranchTable());
+  if(view==='users') requestAnimationFrame(()=>renderUsers());
 }
 
 // ── MOBILE ──
 function mobGo(view,el){
+  ACTIVE_VIEW=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   const vEl=document.getElementById('v-'+view);
   if(vEl)vEl.classList.add('on');
   const titles={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
   document.getElementById('pgtitle').textContent=titles[view]||view;
-  refresh();
-  if(view==='daily')renderDailyTable();
-  if(view==='branches')renderBranchTable();
-  if(view==='users')renderUsers();
+  if(view==='overview') scheduleRefresh('overview');
+  else scheduleRefresh('light');
+  if(view==='daily')requestAnimationFrame(()=>renderDailyTable());
+  if(view==='branches')requestAnimationFrame(()=>renderBranchTable());
+  if(view==='users')requestAnimationFrame(()=>renderUsers());
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
 }
@@ -2167,7 +2228,7 @@ function mobInitNav(){
 
 // ── UPLOAD LOGS ──
 async function loadUploadLogs(){
-  if(!db){refresh();return;}
+  if(!db){scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');return;}
   try{
     // Try server first, fallback to cache if offline
     let snap;
@@ -2210,8 +2271,8 @@ async function loadUploadLogs(){
       }
     });
     renderUpLog();
-    refresh();
-  }catch(e){console.error('loadUploadLogs:',e);refresh();}
+    scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  }catch(e){console.error('loadUploadLogs:',e);scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 }
 
 async function saveUploadLog(logObj){
@@ -2236,17 +2297,23 @@ async function loadBranchData(){
     snap.forEach(doc=>{
       const id=doc.id;
       const d=doc.data();
-      // restore cost
+      // restore cost (monthly + backward compatibility)
+      const curKey=`${yy}_${mm}`;
+      if(d.costs) branchMonthlyCosts[id]=d.costs;
       if(COST[id]){
-        COST[id].labor=d.labor||0;
-        COST[id].rent=d.rent||0;
+        if(d.costs&&d.costs[curKey]){
+          COST[id].labor=d.costs[curKey].labor||0;
+          COST[id].rent=d.costs[curKey].rent||0;
+        } else {
+          COST[id].labor=d.labor||0;
+          COST[id].rent=d.rent||0;
+        }
       }
       // restore supervisor
       const branch=BR.find(b=>b.id===id);
       if(branch&&d.sup) branch.sup=d.sup;
       // restore target for current month (also load all months into branchTargets)
       // Default: current month target
-      const curKey=`${yy}_${mm}`;
       if(d.targets&&d.targets[curKey]!==undefined){
         branchTargets[id]=d.targets[curKey];
       } else if(d.target!==undefined){
@@ -2259,6 +2326,25 @@ async function loadBranchData(){
 }
 
 // Load target for a specific year+month
+
+function loadCostForPeriod(){
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  if(!mEl||!yEl) return;
+  const mm=String(parseInt(mEl.value)).padStart(2,'0');
+  const yy=yEl.value;
+  const key=`${yy}_${mm}`;
+  BR.forEach(b=>{
+    const monthly=branchMonthlyCosts[b.id];
+    if(monthly&&monthly[key]){
+      COST[b.id].labor=monthly[key].labor||0;
+      COST[b.id].rent=monthly[key].rent||0;
+    }else if(monthly){
+      COST[b.id].labor=0; COST[b.id].rent=0;
+    }
+  });
+}
+
 function loadTargetForPeriod(){
   const mEl=document.getElementById('dp-m');
   const yEl=document.getElementById('dp-y');
@@ -2292,9 +2378,16 @@ async function saveBranchDataToDB(id){
       sup:branch?.sup||'',
       updatedAt:new Date().toISOString()
     },{merge:true});
-    // Step 2: save target for this month using dot notation (merge keeps other months)
-    const targetField=`targets.${yy}_${mm}`;
-    await ref.update({[targetField]:branchTargets[id]||0});
+    // Step 2: save target + monthly cost for this period
+    const periodKey=`${yy}_${mm}`;
+    const targetField=`targets.${periodKey}`;
+    const laborField=`costs.${periodKey}.labor`;
+    const rentField=`costs.${periodKey}.rent`;
+    await ref.update({
+      [targetField]:branchTargets[id]||0,
+      [laborField]:COST[id]?.labor||0,
+      [rentField]:COST[id]?.rent||0
+    });
   }catch(e){console.error('saveBranchDataToDB:',e);}
 }
 
@@ -2349,9 +2442,10 @@ async function loadAllData(){
     await loadUploadLogs();
     lockSelBr(); // re-lock selBr หลัง load เสร็จ ป้องกัน filter overwrite
     loadTargetForPeriod();
+    loadCostForPeriod();
     refreshOverviewOnly();
     if(document.getElementById('v-branches').classList.contains('on')) renderBranchTable();
-  }catch(e){console.error('loadAllData error:',e);refresh();}
+  }catch(e){console.error('loadAllData error:',e);scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 }
 
 // ── INIT ──
