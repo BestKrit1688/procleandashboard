@@ -461,7 +461,7 @@ details.le>summary::-webkit-details-marker{display:none}
       </div>
       <div class="row r2">
         <div class="panel">
-          <div class="ph"><span class="pt">ยอดขายตามสาขา (Top 12)</span></div>
+          <div class="ph"><span class="pt">ยอดขายตามสาขา (Top 5)</span></div>
           <div class="pwrap" style="height:250px"><canvas id="ch-branch" role="img" aria-label="สาขา"></canvas></div>
         </div>
         <div class="panel">
@@ -848,6 +848,25 @@ function pctLimitColor(pct,limit){
 function laborPctColor(pct){return pctLimitColor(pct,30);}
 function rentPctColor(pct){return pctLimitColor(pct,28);}
 function totalCostPctColor(pct){return pctLimitColor(pct,58);}
+function calcCostPct(rev,cost){
+  return rev>0?(cost/rev*100):null;
+}
+function calcMarginPct(rev,cost){
+  return rev>0?((rev-cost)/rev*100):0;
+}
+function pctLabel(pct){
+  return pct===null||pct===undefined||!Number.isFinite(pct)?'N/A':pct.toFixed(1)+'%';
+}
+function costColorFor(rev,cost,pct,limit=58){
+  if(cost>0&&rev<=0) return 'var(--red)';
+  if(pct===null||pct===undefined||!Number.isFinite(pct)) return 'var(--tx3)';
+  return pct>limit?'var(--red)':'var(--green)';
+}
+function costKpiClassFor(rev,cost,pct){
+  if(cost>0&&rev<=0) return 'r';
+  if(cost>0&&pct!==null&&pct>58) return 'r';
+  return 'g';
+}
 function removeBranchState(id){
   delete DATA[id]; delete COST[id]; delete branchTargets[id]; delete branchMonthlyCosts[id]; delete branchMonthlyTargets[id]; delete RENT_RULE[id];
   Object.keys(DAILY_EXTRA).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_EXTRA[k];});
@@ -1372,8 +1391,8 @@ function refresh(scope='all'){
   const avgWork=workStats.count?workStats.minutes/workStats.count:null;
   // cost
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
-  const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
-  const costKpiClass=tCost>0?(parseFloat(costPct)>58?'r':'g'):'g';
+  const costPct=calcCostPct(tRev,tCost);
+  const costKpiClass=costKpiClassFor(tRev,tCost,costPct);
   const gp=tRev-tCost;
 
   // YoY compares the same filtered period, not full-year totals.
@@ -1388,7 +1407,7 @@ function refresh(scope='all'){
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
-    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
+    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
 
   const brL=sel.length===BR.length?'ทุกสาขา':sel.length<=2?sel.map(b=>b.id).join(', '):`${sel.length} สาขา`;
   document.getElementById('ftag').textContent=`${periodLabel} · ${brL}`;
@@ -1415,29 +1434,33 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
   const rent=sel.reduce((s,b)=>s+(COST[b.id]?.rent||0),0);
   const service=sel.reduce((s,b)=>s+(COST[b.id]?.service||0),0);
   const rentService=rent+service;
-  const laborPct=tRev>0?(labor/tRev*100).toFixed(1):0;
-  const rentPct=tRev>0?(rent/tRev*100).toFixed(1):0;
-  const servicePct=tRev>0?(service/tRev*100).toFixed(1):0;
-  const rentServicePct=tRev>0?(rentService/tRev*100).toFixed(1):0;
-  const laborColor=laborPctColor(laborPct);
-  const rentColor=rentPctColor(rentServicePct);
-  const totalColor=totalCostPctColor(costPct);
+  const laborPct=calcCostPct(tRev,labor);
+  const rentPct=calcCostPct(tRev,rent);
+  const servicePct=calcCostPct(tRev,service);
+  const rentServicePct=calcCostPct(tRev,rentService);
+  const marginPct=calcMarginPct(tRev,tCost);
+  const laborColor=costColorFor(tRev,labor,laborPct,30);
+  const rentColor=costColorFor(tRev,rentService,rentServicePct,28);
+  const totalColor=costColorFor(tRev,tCost,costPct,58);
+  const profitColor=gp<0?'var(--red)':(hasCost?'var(--green)':'var(--tx3)');
+  const marginColor=marginPct<0?'var(--red)':(hasCost?'var(--green)':'var(--tx3)');
+  const isCostBad=hasCost&&(tRev<=0||(costPct!==null&&costPct>58)||gp<0);
 
-  document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุน ${getCostPeriodLabel()} · ${costPct}% ของยอดขาย`:`ยังไม่กรอกต้นทุน (${getCostPeriodLabel()})`; 
-  document.getElementById('cost-ov-badge').style.background=hasCost?(parseFloat(costPct)>58?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)'):'';
-  document.getElementById('cost-ov-badge').style.color=hasCost?(parseFloat(costPct)>58?'#fca5a5':'#86efac'):'';
+  document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุน ${getCostPeriodLabel()} · ${pctLabel(costPct)} ของยอดขาย`:`ยังไม่กรอกต้นทุน (${getCostPeriodLabel()})`; 
+  document.getElementById('cost-ov-badge').style.background=hasCost?(isCostBad?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)'):'';
+  document.getElementById('cost-ov-badge').style.color=hasCost?(isCostBad?'#fca5a5':'#86efac'):'';
   const barEl=document.getElementById('cost-ov-bar-wrap');
   const ck=document.getElementById('cost-ov-kpi');
   ck.innerHTML=`
     <div class="ckpi">
       <div class="ck-lbl">ค่าแรง</div>
       <div class="ck-val">${hasCost&&labor>0?fmt(labor):'—'}</div>
-      ${hasCost&&labor>0?`<div style="font-size:10px;color:${laborColor};margin-top:3px">${laborPct}% ของรายได้</div>`:''}
+      ${hasCost&&labor>0?`<div style="font-size:10px;color:${laborColor};margin-top:3px">${pctLabel(laborPct)} ของรายได้</div>`:''}
     </div>
     <div class="ckpi">
       <div class="ck-lbl">ค่าเช่า</div>
       <div class="ck-val">${hasCost&&rent>0?fmt(rent):'—'}</div>
-      ${hasCost&&rentService>0?`<div style="font-size:10px;color:${rentColor};margin-top:3px">${rentServicePct}% ค่าเช่า+ค่าบริการ</div>`:''}
+      ${hasCost&&rentService>0?`<div style="font-size:10px;color:${rentColor};margin-top:3px">${pctLabel(rentServicePct)} ค่าเช่า+ค่าบริการ</div>`:''}
     </div>
     <div class="ckpi">
       <div class="ck-lbl">ค่าบริการ</div>
@@ -1446,15 +1469,15 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
     <div class="ckpi">
       <div class="ck-lbl">ต้นทุนรวม</div>
       <div class="ck-val">${hasCost?fmt(tCost):'—'}</div>
-      ${hasCost?`<div style="font-size:10px;color:${totalColor};margin-top:3px">${costPct}% ของรายได้</div>`:''}
+      ${hasCost?`<div style="font-size:10px;color:${totalColor};margin-top:3px">${pctLabel(costPct)} ของรายได้</div>`:''}
     </div>
     <div class="ckpi">
       <div class="ck-lbl">กำไรขั้นต้น</div>
-      <div class="ck-val" style="color:${hasCost?(gp>=0?'var(--green)':'var(--red)'):'var(--tx3)'}">${hasCost?fmt(gp):'—'}</div>
+      <div class="ck-val" style="color:${profitColor}">${hasCost?fmt(gp):'—'}</div>
     </div>
     <div class="ckpi">
       <div class="ck-lbl">Gross Margin</div>
-      <div class="ck-val" style="color:${hasCost?totalColor:'var(--tx3)'}">${hasCost?(100-parseFloat(costPct)).toFixed(1)+'%':'—'}</div>
+      <div class="ck-val" style="color:${marginColor}">${hasCost?pctLabel(marginPct):'—'}</div>
     </div>`;
   if(hasCost){
     barEl.style.display='block';
@@ -1462,15 +1485,15 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
     document.getElementById('cost-ov-bar-wrap').innerHTML=`
       <div style="font-size:11px;color:var(--tx3);margin-bottom:4px">สัดส่วนต้นทุน / ยอดขาย</div>
       <div style="background:var(--c0);border-radius:6px;height:12px;overflow:hidden;margin-bottom:5px;display:flex">
-        <div style="width:${Math.min(laborPct,100)}%;background:var(--amber);height:100%;transition:width .5s" title="ค่าแรง ${laborPct}%"></div>
-        <div style="width:${Math.min(rentPct,Math.max(0,100-laborPct))}%;background:var(--purple);height:100%;transition:width .5s" title="ค่าเช่า ${rentPct}%"></div>
-        <div style="width:${Math.min(servicePct,Math.max(0,100-laborPct-rentPct))}%;background:var(--teal);height:100%;transition:width .5s" title="ค่าบริการ ${servicePct}%"></div>
+        <div style="width:${Math.min(laborPct||0,100)}%;background:var(--amber);height:100%;transition:width .5s" title="ค่าแรง ${pctLabel(laborPct)}"></div>
+        <div style="width:${Math.min(rentPct||0,Math.max(0,100-(laborPct||0)))}%;background:var(--purple);height:100%;transition:width .5s" title="ค่าเช่า ${pctLabel(rentPct)}"></div>
+        <div style="width:${Math.min(servicePct||0,Math.max(0,100-(laborPct||0)-(rentPct||0)))}%;background:var(--teal);height:100%;transition:width .5s" title="ค่าบริการ ${pctLabel(servicePct)}"></div>
       </div>
       <div style="display:flex;gap:12px;font-size:10.5px;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--amber);border-radius:2px;display:inline-block"></span>ค่าแรง ${laborPct}%</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--purple);border-radius:2px;display:inline-block"></span>ค่าเช่า ${rentPct}%</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--teal);border-radius:2px;display:inline-block"></span>ค่าบริการ ${servicePct}%</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--c2);border:1px solid var(--border2);border-radius:2px;display:inline-block"></span>กำไร ${(100-parseFloat(costPct)).toFixed(1)}%</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--amber);border-radius:2px;display:inline-block"></span>ค่าแรง ${pctLabel(laborPct)}</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--purple);border-radius:2px;display:inline-block"></span>ค่าเช่า ${pctLabel(rentPct)}</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--teal);border-radius:2px;display:inline-block"></span>ค่าบริการ ${pctLabel(servicePct)}</span>
+        <span style="display:flex;align-items:center;gap:4px;color:${marginColor}"><span style="width:8px;height:8px;background:var(--c2);border:1px solid var(--border2);border-radius:2px;display:inline-block"></span>กำไร ${pctLabel(marginPct)}</span>
       </div>`;
   } else { barEl.style.display='none'; }
 }
@@ -1546,10 +1569,13 @@ function renderTarget(tRev,tOrd,tNew){
     const sb=sel.filter(b=>b.sup===sup);
     const sRev=sb.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
     const sTgt=sb.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
-    if(!sRev&&!sTgt) return null;
+    const sCost=sb.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
+    if(!sRev&&!sTgt&&!sCost) return null;
     const sp=sTgt>0?Math.min(sRev/sTgt*100,999).toFixed(1):0;
     const sc=sTgt===0?'var(--tx3)':sp>=100?'var(--green)':sp>=80?'var(--amber)':'var(--red)';
-    return{sup,sRev,sTgt,sp,sc,count:sb.length};
+    const costPct=calcCostPct(sRev,sCost);
+    const costColor=sCost>0?costColorFor(sRev,sCost,costPct,58):'var(--tx3)';
+    return{sup,sRev,sTgt,sCost,costPct,costColor,sp,sc,count:sb.length};
   }).filter(g=>g!==null);
 
   el.innerHTML=`
@@ -1576,6 +1602,9 @@ function renderTarget(tRev,tOrd,tNew){
             <span style="font-size:10px;color:var(--tx3)">${g.count} สาขา</span>
           </div>
           <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">${fmt(g.sRev)}</div>
+          <div style="font-size:10.5px;color:${g.costColor};margin-bottom:5px">
+            ต้นทุน ${g.sCost>0?fmt(g.sCost)+' · '+pctLabel(g.costPct):'—'}
+          </div>
           ${g.sTgt>0?`
             <div style="background:var(--c0);border-radius:4px;height:5px;overflow:hidden;margin-bottom:3px">
               <div style="height:100%;width:${Math.min(g.sp,100)}%;background:${g.sc};border-radius:4px;transition:width .5s"></div></div>
@@ -1714,7 +1743,7 @@ function showWorkDurationInfo(){
 
 // ── CHARTS ──
 const DG='rgba(31,48,85,.5)';
-const baseO={responsive:true,maintainAspectRatio:false,animation:false,parsing:false,normalized:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:DG},ticks:{color:'#45588a',font:{size:10}}},y:{grid:{color:DG},ticks:{color:'#45588a',font:{size:10}}}}};
+const baseO={responsive:true,maintainAspectRatio:false,animation:false,normalized:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:DG},ticks:{color:'#45588a',font:{size:10}}},y:{grid:{color:DG},ticks:{color:'#45588a',font:{size:10}}}}};
 function dc(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
 
 function drawDailyChart(){
@@ -1802,7 +1831,7 @@ function drawBrandChart(){
   const vals=[bm.central,bm.lotus,bm.bigc,bm.other];
   const colors=[BC.central,BC.lotus,BC.bigc,BC.other];
   document.getElementById('brand-leg').innerHTML=labels.map((l,i)=>`<span style="display:flex;align-items:center;gap:4px;color:var(--tx2);font-size:10.5px"><span style="width:7px;height:7px;border-radius:2px;background:${colors[i]};display:inline-block"></span>${l}: ${fmt(vals[i])}</span>`).join('');
-  CH['brand']=new Chart(document.getElementById('ch-brand'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0f1628'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,parsing:false,normalized:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>i.label+': '+fmt(i.raw)}}}}});
+  CH['brand']=new Chart(document.getElementById('ch-brand'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0f1628'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,normalized:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>i.label+': '+fmt(i.raw)}}}}});
 }
 
 function drawSizeChart(){
@@ -2028,8 +2057,8 @@ function refreshOverviewOnly(){
   const workStats=getPeriodWorkStats(sel);
   const avgWork=workStats.count?workStats.minutes/workStats.count:null;
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
-  const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
-  const costKpiClass=tCost>0?(parseFloat(costPct)>58?'r':'g'):'g';
+  const costPct=calcCostPct(tRev,tCost);
+  const costKpiClass=costKpiClassFor(tRev,tCost,costPct);
   const gp=tRev-tCost;
   const {current:y0,previous:y1}=getCompareYears();
   const v0=getSelectedPeriodRevenueForYear(sel,y0);
@@ -2041,7 +2070,7 @@ function refreshOverviewOnly(){
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
-    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
+    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
   renderForecast(tRev);
@@ -2129,10 +2158,10 @@ function renderBranchTable(){
     const rentService=(+c.rent||0)+(+c.service||0);
     const laborPct=rev>0?(c.labor/rev*100).toFixed(1):'—';
     const rentServicePct=rev>0?(rentService/rev*100).toFixed(1):'—';
-    const costPct=rev>0?(totalCost/rev*100).toFixed(1):'—';
+    const costPct=calcCostPct(rev,totalCost);
     const laborColor=laborPctColor(laborPct);
     const rentColor=rentPctColor(rentServicePct);
-    const costColor=totalCost===0?'var(--tx3)':totalCostPctColor(costPct);
+    const costColor=totalCost===0?'var(--tx3)':costColorFor(rev,totalCost,costPct,58);
     const tgt=branchTargets[b.id]||0;
     const tgtPct=tgt>0?Math.min((rev/tgt*100),999).toFixed(1):0;
     const tgtColor=tgt===0?'var(--tx3)':tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)';
@@ -2195,7 +2224,7 @@ function renderBranchTable(){
       <td>${rentInp}</td>
       <td>${serviceInp}</td>
       <td class="mono br-total-cost" data-id="${b.id}" style="font-size:11.5px;font-weight:600;color:${costColor}">${totalCost>0?fmt(totalCost):'—'}</td>
-      <td class="br-cost-pct" data-id="${b.id}" style="font-size:11.5px;font-weight:600;color:${costColor};font-family:'IBM Plex Mono',monospace">${totalCost>0?costPct+'%':'—'}</td>
+      <td class="br-cost-pct" data-id="${b.id}" style="font-size:11.5px;font-weight:600;color:${costColor};font-family:'IBM Plex Mono',monospace">${totalCost>0?pctLabel(costPct):'—'}</td>
       <td>${tgtInp}</td>
       <td style="font-size:11.5px;font-weight:600;color:${tgtColor};font-family:'IBM Plex Mono',monospace">${tgt>0?tgtPct+'%':'—'}</td>
       <td>${saveBtn}</td>
@@ -2271,10 +2300,10 @@ function updateBranchCostCells(row,id){
   const totalCost=getBranchCostTotal(id);
   const laborPct=rev>0?(labor/rev*100).toFixed(1):'—';
   const rentServicePct=rev>0?(rentService/rev*100).toFixed(1):'—';
-  const costPct=rev>0?(totalCost/rev*100).toFixed(1):'—';
+  const costPct=calcCostPct(rev,totalCost);
   const laborColor=laborPctColor(laborPct);
   const rentColor=rentPctColor(rentServicePct);
-  const color=totalCost===0?'var(--tx3)':totalCostPctColor(costPct);
+  const color=totalCost===0?'var(--tx3)':costColorFor(rev,totalCost,costPct,58);
   const laborPctEl=row.querySelector('.br-labor-pct');
   const rentAmountEl=row.querySelector('.br-rent-amount');
   const rentServicePctEls=row.querySelectorAll('.br-rent-service-pct');
@@ -2298,7 +2327,7 @@ function updateBranchCostCells(row,id){
     totalEl.style.color=color;
   }
   if(pctEl){
-    pctEl.textContent=totalCost>0?costPct+'%':'—';
+    pctEl.textContent=totalCost>0?pctLabel(costPct):'—';
     pctEl.style.color=color;
   }
 }
@@ -2335,13 +2364,13 @@ function updateBrSummary(sel){
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const tTgt=sel.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
-  const costPct=tRev>0?(tCost/tRev*100).toFixed(1):0;
+  const costPct=calcCostPct(tRev,tCost);
   const tgtPct=tTgt>0?(tRev/tTgt*100).toFixed(1):0;
-  const tColor=tCost===0?'var(--tx3)':totalCostPctColor(costPct);
+  const tColor=tCost===0?'var(--tx3)':costColorFor(tRev,tCost,costPct,58);
   el.innerHTML=`
     <span style="color:var(--tx3)">รวม:</span>
     <span>ยอดขาย <strong class="mono">${fmt(tRev)}</strong></span>
-    <span>ต้นทุน (${getCostPeriodLabel()}) <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+costPct+'%)':'—'}</strong></span>
+    <span>ต้นทุน (${getCostPeriodLabel()}) <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+pctLabel(costPct)+')':'—'}</strong></span>
     <span>เป้า <strong class="mono">${tTgt>0?fmt(tTgt):'—'}</strong></span>
     ${tTgt>0?`<span style="color:${tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)'}">%เป้า <strong class="mono">${tgtPct}%</strong></span>`:''}`;
 }
