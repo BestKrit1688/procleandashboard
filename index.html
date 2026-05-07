@@ -185,6 +185,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
 
 /* log entries */
 .le{display:grid;grid-template-columns:auto 1fr auto auto;gap:9px;align-items:center;padding:7px 10px;background:var(--c2);border-radius:7px;margin-bottom:5px;border:1px solid var(--border);animation:si .2s ease}
+details.le>summary::-webkit-details-marker{display:none}
 @keyframes si{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .ldot{width:7px;height:7px;border-radius:50%}
 .lt{font-size:10px;color:var(--tx3);font-family:'IBM Plex Mono',monospace}
@@ -264,6 +265,8 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
   .row.r2,.row.r3,.row.r32{grid-template-columns:1fr !important}
   .tw{overflow-x:auto}
   .dtbl{min-width:580px}
+  #tbl-daily.daily-mobile{min-width:0}
+  #tbl-daily.daily-mobile th,#tbl-daily.daily-mobile td{padding:7px 6px;font-size:11px}
   .lcard{width:92vw;padding:24px 16px}
   #mob-bar{display:flex !important}
   #mob-fab{display:flex !important;z-index:9999 !important;pointer-events:auto !important}
@@ -280,7 +283,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
 .mob-tab svg{width:19px;height:19px}
 .mob-tab.on{color:var(--accent)}
 /* FAB — z-index above everything including canvas */
-#mob-fab{display:none;position:fixed;bottom:66px;right:14px;z-index:9999;
+#mob-fab{display:none;position:fixed;bottom:104px;right:18px;z-index:9999;
   width:44px;height:44px;border-radius:50%;background:var(--accent);
   border:none;color:#fff;font-size:18px;cursor:pointer;
   align-items:center;justify-content:center;
@@ -496,10 +499,10 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
     <div id="v-daily" class="view">
       <div class="panel" style="margin-bottom:11px">
         <div class="ph">
-          <span class="pt">ยอดรายวัน แยกสาขา (Top 5)</span>
-          <span class="pbadge" id="d2-badge">เส้นทึบ = ปีนี้ · เส้นประ = ปีก่อน</span>
+          <span class="pt">ยอดรวมรายวัน เทียบปีก่อน</span>
+          <span class="pbadge" id="d2-badge">แท่งคู่ = ปีนี้ / ปีก่อน</span>
         </div>
-        <div class="pwrap" style="height:280px"><canvas id="ch-daily2" role="img" aria-label="รายวันสาขา"></canvas></div>
+        <div class="pwrap" style="height:280px"><canvas id="ch-daily2" role="img" aria-label="ยอดรวมรายวัน"></canvas></div>
       </div>
       <div class="panel"><div class="ph"><span class="pt">ตารางยอดรายวัน</span></div>
         <div class="tw" style="max-height:380px"><table class="dtbl" id="tbl-daily"><thead><tr><th>วัน</th></tr></thead><tbody></tbody></table></div>
@@ -563,7 +566,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
     <div id="v-upload" class="view">
       <div class="alert al-info"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <div>อัปโหลดไฟล์ Excel รายวัน (dailyReport_YYYY-MM-DD.xlsx) · ระบบอ่าน <strong>สถานะใบงาน / ราคารวม / บริการ / เวลาเริ่มงาน / เวลาเสร็จงาน</strong> อัตโนมัติ<br>
-        เฉพาะรายการ <strong>เสร็จงาน</strong> เท่านั้น · จัดกลุ่มเป็น ซื้อบัตร / ใช้บัตร / ฟรี 0 บาท / รายการล้างรถ / อื่นๆ</div>
+        เฉพาะรายการ <strong>เสร็จงาน</strong> เท่านั้น · จัดกลุ่มเป็น ซื้อบัตร / ใช้บัตร / ฟรีบริการ / รายการล้างรถ / อื่นๆ</div>
       </div>
       <div class="panel" style="margin-bottom:11px">
         <div class="ph"><span class="pt">อัปโหลดไฟล์ Excel</span></div>
@@ -580,6 +583,19 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
             <input type="file" id="finp" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="handleFile(this.files[0])" style="display:none">
           </label>
           <span id="finp-name" style="font-size:12px;color:var(--tx3)">ยังไม่ได้เลือกไฟล์</span>
+        </div>
+      </div>
+      <div class="panel" id="online-sale-panel" style="margin-bottom:11px">
+        <div class="ph"><span class="pt">กรอกยอดขายออนไลน์</span><span class="pbadge">ออนไลน์</span></div>
+        <div class="frow" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;align-items:end">
+          <div class="fg"><label>วันที่</label><input id="online-date" type="date"></div>
+          <div class="fg"><label>สาขา</label><select id="online-br"></select></div>
+          <div class="fg"><label>ยอดขายออนไลน์</label><input id="online-rev" type="number" min="0" step="0.01" placeholder="0"></div>
+          <div class="fg"><label>จำนวนงาน (ถ้ามี)</label><input id="online-cars" type="number" min="0" step="1" placeholder="0"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-green btn-sm" onclick="saveOnlineSale()">บันทึกยอดออนไลน์</button>
+          <span id="online-msg" style="font-size:12px;color:var(--tx3);min-height:16px"></span>
         </div>
       </div>
       <div id="prev-wrap" style="display:none" class="panel" style="margin-bottom:11px">
@@ -791,7 +807,7 @@ function getDR(d,id){
 }
 
 // menu / category
-const SERVICE_CATS=['ซื้อบัตร','ใช้บัตร','ฟรี 0 บาท','รายการล้างรถ','อื่นๆ'];
+const SERVICE_CATS=['ซื้อบัตร','ใช้บัตร','ฟรีบริการ','รายการล้างรถ','ออนไลน์','อื่นๆ'];
 const CATS=SERVICE_CATS.map(cat=>({cat,rev:0,ord:0}));
 const SIZES=[{s:'L',r:0},{s:'M',r:0},{s:'XL',r:0}];
 
@@ -886,9 +902,10 @@ function classifyService(svc,price){
 }
 function normalizeSvcCat(cat){
   const s=String(cat||'').toLowerCase();
+  if(s.includes('ออนไลน์')||s.includes('online')) return 'ออนไลน์';
   if(s.includes('ซื้อ')||s.includes('buy')) return 'ซื้อบัตร';
   if(s.includes('ใช้')||s.includes('use')) return 'ใช้บัตร';
-  if(s.includes('ฟรี')||s.includes('free')||s.includes('voucher')||s.includes('gift')) return 'ฟรี 0 บาท';
+  if(s.includes('ฟรี')||s.includes('free')||s.includes('voucher')||s.includes('gift')) return 'ฟรีบริการ';
   if(s.includes('ล้างรถ')||s.includes('wash')) return 'รายการล้างรถ';
   return 'อื่นๆ';
 }
@@ -1011,6 +1028,7 @@ function initForUser(){
 
   buildBcList();
   mobInitNav();
+  renderOnlineBranchOptions();
   scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light'); // แสดงกราฟเปล่าก่อน
   loadAllData(); // โหลดข้อมูลจาก Firebase แล้ว refresh อีกรอบ
   if(CU.role==='admin') renderUsers();
@@ -1245,21 +1263,21 @@ function applyBrand(){
   const pool=getFilteredPool();
   if(CU.role==='supervisor') selBr=new Set(pool.map(b=>b.id));
   else selBr=new Set(pool.map(b=>b.id));
-  buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  buildBcList();renderMobBranchList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function applyRegion(){
   if(CU.role==='branch') return;
   activeRegion=document.getElementById('fRegion').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
-  buildBcList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  buildBcList();renderMobBranchList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function applySup(){
   if(CU.role==='branch'||CU.role==='supervisor') return; // locked
   activeSup=document.getElementById('fSup').value;
   const pool=getFilteredPool();
   selBr=new Set(pool.map(b=>b.id));
-  buildBcList(); scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  buildBcList();renderMobBranchList(); scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 // ── MAIN REFRESH ──
@@ -1296,9 +1314,9 @@ function refresh(scope='all'){
 
   // KPI
   document.getElementById('kpi-main').innerHTML=`
-    <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
+    <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
-    <div class="kpi t"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">${workStats.count?fN(workStats.count)+' งาน':'ยังไม่มีเวลา'}</div></div>
+    <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
     <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
 
@@ -1456,7 +1474,7 @@ function renderTarget(tRev,tOrd,tNew){
   // Supervisor group breakdown
   const supGroups=SUPS.map(sup=>{
     const sb=sel.filter(b=>b.sup===sup);
-    const sRev=sb.reduce((s,b)=>s+getRev(b.id),0);
+    const sRev=sb.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
     const sTgt=sb.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
     if(!sRev&&!sTgt) return null;
     const sp=sTgt>0?Math.min(sRev/sTgt*100,999).toFixed(1):0;
@@ -1465,8 +1483,8 @@ function renderTarget(tRev,tOrd,tNew){
   }).filter(g=>g!==null);
 
   el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px">
-      ${tc('ยอดขาย',tRev,raw,true)}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:12px">
+      ${tc('ยอดขาย',tRev,raw,true,"showRevenueBreakdown('all')")}
       ${tc('เฉลี่ย/สาขา',tRev/(sel.length||1),raw/(sel.length||1),true)}
       ${tc('จำนวนงาน',tOrd,Math.round(raw/720),false)}
       ${tc('ลูกค้าใหม่',tNew,Math.round(raw/4200),false)}
@@ -1482,7 +1500,7 @@ function renderTarget(tRev,tOrd,tNew){
     <div style="font-size:11px;color:var(--tx3);margin-bottom:6px">ความคืบหน้าตามกลุ่มผู้ดูแล</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:7px">
       ${supGroups.map(g=>`
-        <div style="background:var(--c2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+        <div onclick='showRevenueBreakdown("sup",${JSON.stringify(g.sup)})' title="คลิกดูที่มาของยอดขาย" style="background:var(--c2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
             <span style="font-size:11px;font-weight:500;color:${SUP_COL[g.sup]||'var(--tx2)'}">${g.sup}</span>
             <span style="font-size:10px;color:var(--tx3)">${g.count} สาขา</span>
@@ -1496,10 +1514,131 @@ function renderTarget(tRev,tOrd,tNew){
         </div>`).join('')}
     </div>`:''}`;
 }
-function tc(lbl,actual,target,isCur){
+function tc(lbl,actual,target,isCur,onClick){
   const p=target>0?(actual/target*100).toFixed(1):0;
   const cls=p>=100?'up':p>=80?'neu':'dn';
-  return`<div class="kpi" style="padding:10px 12px"><div class="kl">${lbl}</div><div class="kv" style="font-size:16px">${isCur?fmt(actual):fN(actual)}</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">เป้า: ${isCur?fmt(target):fN(target)}</div><div class="ks ${cls}">${p}%</div></div>`;
+  const clickAttr=onClick?` onclick="${onClick}" title="คลิกดูที่มาของยอดขาย"`:'';
+  const cursor=onClick?'cursor:pointer;':'';
+  return`<div class="kpi"${clickAttr} style="${cursor}padding:10px 12px"><div class="kl">${lbl}</div><div class="kv" style="font-size:16px">${isCur?fmt(actual):fN(actual)}</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">เป้า: ${isCur?fmt(target):fN(target)}</div><div class="ks ${cls}">${p}%</div></div>`;
+}
+
+function escHtml(v){
+  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function periodRevFromLog(l){
+  if(!l) return 0;
+  if(l.dayRevMap) return Object.entries(l.dayRevMap).reduce((s,[dateKey,rev])=>dateKeyInCurrentPeriod(dateKey)?s+(+rev||0):s,0);
+  return dateKeyInCurrentPeriod(l.date)?(+l.rev||0):0;
+}
+function periodCarsFromLog(l){
+  if(!l) return 0;
+  if(l.dayCarMap) return Object.entries(l.dayCarMap).reduce((s,[dateKey,cars])=>dateKeyInCurrentPeriod(dateKey)?s+(+cars||0):s,0);
+  return dateKeyInCurrentPeriod(l.date)?(+l.cars||0):0;
+}
+function ensureDetailModal(){
+  let bg=document.getElementById('detail-modal');
+  if(bg) return bg;
+  bg=document.createElement('div');
+  bg.id='detail-modal';
+  bg.className='mbg hide';
+  bg.innerHTML=`<div class="modal" style="width:620px">
+    <div class="mh"><h2 id="detail-title">รายละเอียด</h2><button class="mcl" onclick="closeDetailModal()">×</button></div>
+    <div id="detail-body"></div>
+  </div>`;
+  bg.addEventListener('click',e=>{if(e.target===bg)closeDetailModal();});
+  document.body.appendChild(bg);
+  return bg;
+}
+function openDetailModal(title,body){
+  const bg=ensureDetailModal();
+  document.getElementById('detail-title').textContent=title;
+  document.getElementById('detail-body').innerHTML=body;
+  bg.classList.remove('hide');
+}
+function closeDetailModal(){
+  const bg=document.getElementById('detail-modal');
+  if(bg) bg.classList.add('hide');
+}
+function showRevenueBreakdown(kind='all',key=''){
+  const allSel=getSel();
+  const branches=(kind==='sup'?allSel.filter(b=>b.sup===key):allSel);
+  const ids=new Set(branches.map(b=>String(b.id)));
+  const rows=branches.map(b=>({
+    b,rev:getPeriodRevenue(b.id),cars:getPeriodCars(b.id)
+  })).filter(r=>r.rev>0||r.cars>0).sort((a,b)=>b.rev-a.rev);
+  const logs=UPLOG.filter(l=>ids.has(String(l.brId)))
+    .map(l=>({...l,_periodRev:periodRevFromLog(l),_periodCars:periodCarsFromLog(l)}))
+    .filter(l=>l._periodRev>0||l._periodCars>0)
+    .sort((a,b)=>b._periodRev-a._periodRev);
+  const total=rows.reduce((s,r)=>s+r.rev,0);
+  const cars=rows.reduce((s,r)=>s+r.cars,0);
+  const title=kind==='sup'?`ที่มายอดขาย ${key}`:'ที่มายอดขายรวม';
+  const branchHtml=rows.length?rows.map(r=>`
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid rgba(31,48,85,.45)">
+      <div style="min-width:0">
+        <div style="font-size:12.5px;font-weight:500">${escHtml(r.b.name)} <span class="mono" style="color:var(--tx3);font-size:10px">${escHtml(r.b.id)}</span></div>
+        <div style="font-size:10.5px;color:var(--tx3)">${escHtml(r.b.sup)} · ${escHtml(BL[r.b.brand]||r.b.brand)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="mono" style="font-size:12.5px;font-weight:600">${fmt(r.rev)}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">${fN(r.cars)} งาน</div>
+      </div>
+    </div>`).join(''):'<div style="color:var(--tx3);font-size:12px;padding:10px 0">ยังไม่มียอดในช่วงเวลานี้</div>';
+  const logHtml=logs.length?logs.map(l=>`
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid rgba(31,48,85,.45)">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:500;word-break:break-word">${escHtml(l.name||'รายการ')}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">${escHtml(l.branch||l.brId||'')} · ${escHtml(l.date||'')} ${l.source==='online'?'· ออนไลน์':''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="mono" style="font-size:12px;color:var(--green)">${fmt(l._periodRev)}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">${fN(l._periodCars)} งาน</div>
+      </div>
+    </div>`).join(''):'<div style="color:var(--tx3);font-size:12px;padding:10px 0">ยังไม่มีไฟล์หรือรายการที่ตรงช่วงเวลานี้</div>';
+  openDetailModal(title,`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">
+      <div class="ckpi"><div class="ck-lbl">ยอดรวม</div><div class="ck-val">${fmt(total)}</div></div>
+      <div class="ckpi"><div class="ck-lbl">จำนวนงาน</div><div class="ck-val">${fN(cars)}</div></div>
+      <div class="ckpi"><div class="ck-lbl">สาขา</div><div class="ck-val">${fN(rows.length)}</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">แยกตามสาขา</div>
+    <div style="max-height:220px;overflow:auto;margin-bottom:12px">${branchHtml}</div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">ที่มาจากไฟล์ / รายการออนไลน์</div>
+    <div style="max-height:220px;overflow:auto">${logHtml}</div>
+  `);
+}
+function showWorkDurationInfo(){
+  const sel=getSel();
+  const totalStats=getPeriodWorkStats(sel);
+  const totalOrders=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
+  const rows=sel.map(b=>{
+    const st=getPeriodWorkStats([b]);
+    const ord=getPeriodOrd(b.id);
+    return {b,minutes:st.minutes,count:st.count,ord,avg:st.count?st.minutes/st.count:null};
+  }).filter(r=>r.count>0||r.ord>0).sort((a,b)=>b.count-a.count||b.ord-a.ord);
+  const rowHtml=rows.length?rows.map(r=>`
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid rgba(31,48,85,.45)">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:500">${escHtml(r.b.name)} <span class="mono" style="color:var(--tx3);font-size:10px">${escHtml(r.b.id)}</span></div>
+        <div style="font-size:10.5px;color:var(--tx3)">รถเสร็จงาน ${fN(r.ord)} · อ่านเวลา D→F ได้ ${fN(r.count)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="mono" style="font-size:12px;font-weight:600">${r.avg!==null?fmtDuration(r.avg):'—'}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">เฉลี่ย</div>
+      </div>
+    </div>`).join(''):'<div style="color:var(--tx3);font-size:12px;padding:10px 0">ยังไม่มีข้อมูลเวลาในช่วงนี้</div>';
+  openDetailModal('ที่มาระยะเวลาทำงาน',`
+    <div class="alert al-info" style="margin-bottom:12px">
+      <div>ระยะเวลาทำงานเฉลี่ยคิดเฉพาะรถที่ <strong>สถานะใบงาน = เสร็จงาน</strong> โดยใช้ <strong>คอลัมน์ D เวลาเริ่มงาน</strong> ถึง <strong>คอลัมน์ F เวลาเสร็จงาน</strong> จากไฟล์ Excel ในช่วง filter ปัจจุบัน จำนวนรถเสร็จงานคือยอดใบงานเสร็จงานเดียวกัน</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">
+      <div class="ckpi"><div class="ck-lbl">เวลาเฉลี่ย</div><div class="ck-val">${totalStats.count?fmtDuration(totalStats.minutes/totalStats.count):'—'}</div></div>
+      <div class="ckpi"><div class="ck-lbl">อ่านเวลา D→F ได้</div><div class="ck-val">${fN(totalStats.count)}</div></div>
+      <div class="ckpi"><div class="ck-lbl">รถเสร็จงาน</div><div class="ck-val">${fN(totalOrders)}</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">แยกตามสาขา</div>
+    <div style="max-height:330px;overflow:auto">${rowHtml}</div>
+  `);
 }
 
 // ── CHARTS ──
@@ -1587,7 +1726,7 @@ function drawBrandChart(){
   dc('brand');
   const sel=getSel();
   const bm={central:0,lotus:0,bigc:0,other:0};
-  sel.forEach(b=>{bm[b.brand]=(bm[b.brand]||0)+getRev(b.id);});
+  sel.forEach(b=>{bm[b.brand]=(bm[b.brand]||0)+getPeriodRevenue(b.id);});
   const labels=['Central','Lotus','Big C','อื่นๆ'];
   const vals=[bm.central,bm.lotus,bm.bigc,bm.other];
   const colors=[BC.central,BC.lotus,BC.bigc,BC.other];
@@ -1608,7 +1747,7 @@ function drawCmpChart(){
 
 function drawSupChart(){
   dc('sup');
-  const sel=getSel();const sm={};SUPS.forEach(s=>{sm[s]=sel.filter(b=>b.sup===s).reduce((t,b)=>t+getRev(b.id),0);});
+  const sel=getSel();const sm={};SUPS.forEach(s=>{sm[s]=sel.filter(b=>b.sup===s).reduce((t,b)=>t+getPeriodRevenue(b.id),0);});
   const sups=Object.entries(sm).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   CH['sup']=new Chart(document.getElementById('ch-sup'),{type:'bar',data:{labels:sups.map(s=>s[0]),datasets:[{data:sups.map(s=>s[1]),backgroundColor:sups.map(s=>SUP_COL[s[0]]||'#888'),borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:15,font:{size:9}}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000000).toFixed(1)+'M'}}},plugins:{legend:{display:false}}}});
 }
@@ -1653,12 +1792,12 @@ function drawMenuOv(){
 
   const curCats=buildCatsFromLog(curYr);
   const otherCats=buildCatsFromLog(otherYr);
-  const hasOther=Object.values(otherCats).some(c=>menuOvMode==='rev'?c.rev>0:c.ord>0);
+  const hasOther=Object.values(otherCats).some(c=>c.rev>0||c.ord>0);
 
   // Union all category names, sort by current year value
   const allCatNames=[...new Set([...SERVICE_CATS,...Object.keys(curCats),...Object.keys(otherCats)])];
   const sorted=allCatNames
-    .filter(name=>menuOvMode==='rev'?(curCats[name]?.rev||0)+(otherCats[name]?.rev||0)>0:(curCats[name]?.ord||0)+(otherCats[name]?.ord||0)>0)
+    .filter(name=>((curCats[name]?.rev||0)+(otherCats[name]?.rev||0)>0)||((curCats[name]?.ord||0)+(otherCats[name]?.ord||0)>0))
     .sort((a,b)=>{
       const va=menuOvMode==='rev'?(curCats[a]?.rev||0):(curCats[a]?.ord||0);
       const vb=menuOvMode==='rev'?(curCats[b]?.rev||0):(curCats[b]?.ord||0);
@@ -1716,12 +1855,25 @@ let daily2Mode='branch';
 function setDaily2Mode(){}
 
 function renderDailyTable(){
-  const sel=getSel().slice(0,8);
+  const fullSel=getSel();
+  const sel=fullSel;
   const days=getPeriodDays();
-  const BRANCH_COLORS=['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#14b8a6','#f97316','#ec4899'];
+  const BRANCH_COLORS=['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#14b8a6','#f97316','#ec4899','#8b5cf6','#0ea5e9','#84cc16','#f43f5e'];
+  const tbl=document.getElementById('tbl-daily');
+  if(tbl){
+    tbl.classList.remove('daily-mobile');
+    tbl.style.minWidth=`${Math.max(580,100+(sel.length*118)+110)}px`;
+  }
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
+  const mEl=document.getElementById('dp-m');
+  const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
+  const getDayCars=(d,id)=>{
+    const dd=String(d).padStart(2,'0');
+    return DAILY_CARS[`${yr}-${mm}-${dd}_${id}`]||0;
+  };
 
-  // ── Table ──
-  document.querySelector('#tbl-daily thead tr').innerHTML='<th>วัน</th>'+sel.map((b,i)=>`<th style="color:${BRANCH_COLORS[i%BRANCH_COLORS.length]}">${b.id}</th>`).join('')+'<th>รวม</th>';
+  // ── Table: always show every selected branch as a column ──
+  document.querySelector('#tbl-daily thead tr').innerHTML='<th>วัน</th>'+sel.map((b,i)=>`<th title="${escHtml(b.name)}" style="color:${BRANCH_COLORS[i%BRANCH_COLORS.length]}">${escHtml(b.id)}</th>`).join('')+'<th>รวม</th>';
   document.querySelector('#tbl-daily tbody').innerHTML=days.map(d=>{
     const vals=sel.map(b=>getDR(d,b.id));
     const tot=vals.reduce((s,v)=>s+v,0);
@@ -1730,54 +1882,38 @@ function renderDailyTable(){
 
   // ── Chart ──
   dc('daily2');
-  const top5=getSel().sort((a,b)=>getPeriodRevenue(b.id)-getPeriodRevenue(a.id)).slice(0,5);
   const yrs=getKnownYears();
   const curYr=CY==='all'?(yrs[0]||getLatestYear()):(CY||getLatestYear());
   const otherYr=yrs.find(y=>y!==curYr)||(curYr-1);
-  const mEl=document.getElementById('dp-m');
-  const mm=String(mEl?parseInt(mEl.value):1).padStart(2,'0');
 
-  const datasets=[];
-
-  // Current year: one line per branch (solid, colored)
-  top5.forEach((b,i)=>{
-    const color=BRANCH_COLORS[i];
+  const curTotals=days.map(d=>{
+    const dd=String(d).padStart(2,'0');
+    return getSel().reduce((s,b)=>s+(DAILY_EXTRA[`${curYr}-${mm}-${dd}_${b.id}`]||0),0);
+  });
+  const otherTotals=days.map(d=>{
+    const dd=String(d).padStart(2,'0');
+    return getSel().reduce((s,b)=>s+(DAILY_EXTRA[`${otherYr}-${mm}-${dd}_${b.id}`]||0),0);
+  });
+  const datasets=[{
+    label:`ปี ${curYr}`,
+    data:curTotals,
+    backgroundColor:'#3b82f6cc',
+    borderColor:'#3b82f6',
+    borderWidth:1,
+    borderRadius:4,
+    borderSkipped:false
+  }];
+  if(otherTotals.some(v=>v>0)){
     datasets.push({
-      label:b.name.length>14?b.name.slice(0,14)+'…':b.name,
-      data:days.map(d=>{
-        const dd=String(d).padStart(2,'0');
-        return DAILY_EXTRA[`${curYr}-${mm}-${dd}_${b.id}`]||0;
-      }),
-      borderColor:color,
-      backgroundColor:color+'18',
-      borderWidth:2,fill:false,tension:.35,
-      pointRadius:days.length<=7?3:1.2,
-      borderDash:[],
-      order:i
+      label:`ปี ${otherYr}`,
+      data:otherTotals,
+      backgroundColor:'#f59e0bcc',
+      borderColor:'#f59e0b',
+      borderWidth:1,
+      borderRadius:4,
+      borderSkipped:false
     });
-  });
-
-  // Previous year lines: always add dashed if data exists
-  top5.forEach((b,i)=>{
-    const color=BRANCH_COLORS[i];
-    const otherData=days.map(d=>{
-      const dd=String(d).padStart(2,'0');
-      return DAILY_EXTRA[`${otherYr}-${mm}-${dd}_${b.id}`]||0;
-    });
-    const hasData=otherData.some(v=>v>0);
-    if(hasData){
-      datasets.push({
-        label:`${b.name.length>10?b.name.slice(0,10)+'…':b.name} (${otherYr})`,
-        data:otherData,
-        borderColor:color+'88',
-        backgroundColor:'transparent',
-        borderWidth:1.5,fill:false,tension:.35,
-        pointRadius:0,
-        borderDash:[4,3],
-        order:i+10
-      });
-    }
-  });
+  }
 
   const yAxisCb=v=>{
     if(v>=1000000) return '฿'+(v/1000000).toFixed(1)+'M';
@@ -1785,16 +1921,24 @@ function renderDailyTable(){
     return v>0?'฿'+v:'';
   };
 
-  CH['daily2']=new Chart(document.getElementById('ch-daily2'),{type:'line',
+  const badge=document.getElementById('d2-badge');
+  if(badge) badge.textContent=otherTotals.some(v=>v>0)?`แท่งคู่ = ${curYr} / ${otherYr}`:`แท่งรวม = ${curYr}`;
+  CH['daily2']=new Chart(document.getElementById('ch-daily2'),{type:'bar',
     data:{labels:days,datasets},
     options:{...baseO,
-      plugins:{legend:{display:true,position:'top',labels:{color:'#7e92bb',font:{size:10},boxWidth:13,padding:6,
-        filter:item=>!item.text.includes('(20') // hide year-compare from legend if cluttered
-      }}},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:otherTotals.some(v=>v>0),position:'top',labels:{color:'#7e92bb',font:{size:10},boxWidth:13,padding:8}},
+        tooltip:{callbacks:{
+          title:items=>`วันที่ ${items[0]?.label||''}`,
+          label:i=>`${i.dataset.label}: ${fmt(i.raw)}`
+        }}
+      },
       scales:{
-        x:{...baseO.scales.x,ticks:{...baseO.scales.x.ticks,maxRotation:0,autoSkip:true,maxTicksLimit:16}},
-        y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:yAxisCb}}
-      }
+        x:{...baseO.scales.x,stacked:false,ticks:{...baseO.scales.x.ticks,maxRotation:0,autoSkip:true,maxTicksLimit:16}},
+        y:{...baseO.scales.y,stacked:false,ticks:{...baseO.scales.y.ticks,callback:yAxisCb}}
+      },
+      datasets:{bar:{barPercentage:.82,categoryPercentage:.72}}
     }
   });
 }
@@ -1819,9 +1963,9 @@ function refreshOverviewOnly(){
   const yoy=v1>0?((v0-v1)/v1*100).toFixed(1):0;
   const kpiEl=document.getElementById('kpi-main');
   if(kpiEl) kpiEl.innerHTML=`
-    <div class="kpi b"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
+    <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
-    <div class="kpi t"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">${workStats.count?fN(workStats.count)+' งาน':'ยังไม่มีเวลา'}</div></div>
+    <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
     <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
     <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?costPct+'%':'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
   updateCostOv(sel,tRev,tCost,costPct,gp);
@@ -1865,7 +2009,7 @@ function addBranchFromForm(){
   document.getElementById('new-br-id').value='';
   document.getElementById('new-br-name').value='';
   if(msg) msg.textContent=`เพิ่มสาขา ${name} แล้ว`;
-  buildBcList();renderBranchTable();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  buildBcList();renderOnlineBranchOptions();renderBranchTable();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function deleteBranch(id){
   if(!(CU&&CU.role==='admin')) return;
@@ -1880,7 +2024,7 @@ function deleteBranch(id){
   rebuildBranchMaps();
   saveBranchMaster();
   if(db) db.collection('branch_data').doc(String(id)).delete().catch(e=>console.error('delete branch_data:',e));
-  buildBcList();renderBranchTable();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+  buildBcList();renderOnlineBranchOptions();renderBranchTable();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 
 function renderBranchTable(){
@@ -2142,7 +2286,7 @@ function classifySvc(svc,price){
   if(slo.includes('ล้างรถ')) return 'รายการล้างรถ';
   const isPkg=slo.includes('package')||slo.includes('บัตร')||slo.includes('card')||s.includes('เล่มที่')||s.includes('เลขที่ :');
   if(isPkg) return amount>0?'ซื้อบัตร':'ใช้บัตร';
-  if(amount===0) return 'ฟรี 0 บาท';
+  if(amount===0) return 'ฟรีบริการ';
   return 'อื่นๆ';
 }
 
@@ -2157,6 +2301,19 @@ function getField(row,...keys){
   }
   return '';
 }
+function getCol(row,index){
+  if(row&&Array.isArray(row.__cols)&&row.__cols[index]!==undefined) return row.__cols[index];
+  return '';
+}
+function getStatusValue(row){
+  return getCol(row,1)||getField(row,'สถานะใบงาน');
+}
+function isCompletedRow(row){
+  return normText(getStatusValue(row)).toLowerCase()==='เสร็จงาน';
+}
+function isCancelledRow(row){
+  return normText(getStatusValue(row)).toLowerCase()==='ยกเลิก';
+}
 function parseMoney(v){
   if(typeof v==='number') return v;
   const t=normText(v);
@@ -2168,7 +2325,7 @@ function parseMoney(v){
   return neg?-n:n;
 }
 function parseDateFromRow(r){
-  const raw=String(getField(r,'วันที่เข้าใช้บริการ','เวลาเข้าใช้บริการ')||'');
+  const raw=String(getCol(r,2)||getField(r,'วันที่เข้าใช้บริการ','เวลาเข้าใช้บริการ')||'');
   if(!raw) return null;
   let m=raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if(m) return {day:parseInt(m[1]),month:parseInt(m[2]),year:parseInt(m[3])};
@@ -2202,12 +2359,13 @@ function parseTimeToMinutes(v){
   return h*60+min+Math.round(sec/60);
 }
 function getWorkDurationMinutes(r){
-  const start=parseTimeToMinutes(getField(r,'เวลาเริ่มงาน','เริ่มงาน','เวลาเริ่ม'));
-  const end=parseTimeToMinutes(getField(r,'เวลาเสร็จงาน','เสร็จงาน','เวลาจบงาน','เวลาสิ้นสุด'));
+  // Excel fixed columns: D = เวลาเริ่มงาน, F = เวลาเสร็จงาน
+  const start=parseTimeToMinutes(getCol(r,3)||getField(r,'เวลาเริ่มงาน','เริ่มงาน','เวลาเริ่ม'));
+  const end=parseTimeToMinutes(getCol(r,5)||getField(r,'เวลาเสร็จงาน','เสร็จงาน','เวลาจบงาน','เวลาสิ้นสุด'));
   if(start===null||end===null) return null;
   let diff=end-start;
   if(diff<0) diff+=1440;
-  return diff>0?diff:null;
+  return diff>=0?diff:null;
 }
 function fmtDuration(mins){
   if(mins===null||mins===undefined||!Number.isFinite(mins)) return '—';
@@ -2259,7 +2417,12 @@ function handleFile(file){
       const wb=XLSX.read(e.target.result,{type:'array'});
       const sheetName=wb.SheetNames[0];
       const ws=wb.Sheets[sheetName];
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''}).map((row,i)=>{
+        const rowIndex=typeof row.__rowNum__==='number'?row.__rowNum__:i+1;
+        Object.defineProperty(row,'__cols',{value:matrix[rowIndex]||[],enumerable:false});
+        return row;
+      });
       // detect branch from sheet name
       const detectedBrId=detectBranchFromSheet(sheetName);
       if(CU&&CU.role==='branch'){
@@ -2282,11 +2445,11 @@ function showPreview(rows,fname,sheetName,detectedBrId){
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'ตรวจไม่พบ (กรุณาตรวจสอบ)';
   document.getElementById('prev-title').textContent=`Preview: ${fname}`;
   document.getElementById('prev-badge').textContent=`Sheet: ${sheetName} → สาขา: ${brName}`;
-  const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
-  const cancelled=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='ยกเลิก');
+  const completed=rows.filter(isCompletedRow);
+  const cancelled=rows.filter(isCancelledRow);
   const workDurations=completed.map(getWorkDurationMinutes).filter(v=>v!==null);
   const avgWork=workDurations.length?workDurations.reduce((s,v)=>s+v,0)/workDurations.length:null;
-  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${avgWork!==null?' · เวลาเฉลี่ย '+fmtDuration(avgWork):''}`;
+  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${avgWork!==null?' · เวลาเฉลี่ย '+fmtDuration(avgWork)+' (D→F '+fN(workDurations.length)+'/'+fN(completed.length)+')':''}`;
   const tbody=document.querySelector('#tbl-prev tbody');
   tbody.innerHTML=completed.map((r,i)=>{
     const price=parseMoney(getField(r,'ราคารวม'));
@@ -2314,7 +2477,7 @@ function importData(){
     alert('สิทธิ์ไม่อนุญาต: อัปโหลดได้เฉพาะข้อมูลสาขาตัวเอง');
     return;
   }
-  const completed=rows.filter(r=>normText(getField(r,'สถานะใบงาน')).toLowerCase()==='เสร็จงาน');
+  const completed=rows.filter(isCompletedRow);
   const totalCars=completed.length;
 
   // service breakdown + group by full date YYYY-MM-DD
@@ -2402,7 +2565,7 @@ function importData(){
   saveUploadLog(UPLOG[0]); // บันทึกลง Firebase
   renderUpLog();
 
-  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน)${workCount?' · เวลาเฉลี่ย '+fmtDuration(workMinutes/workCount):''}`;
+  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน)${workCount?' · เวลาเฉลี่ย '+fmtDuration(workMinutes/workCount)+' (D→F '+fN(workCount)+'/'+fN(totalCars)+')':''}`;
   PENDING=null;
   setTimeout(()=>{
     document.getElementById('prev-wrap').style.display='none';
@@ -2413,9 +2576,98 @@ function importData(){
 
 function cancelPrev(){PENDING=null;document.getElementById('prev-wrap').style.display='none';document.getElementById('finp').value='';}
 
+function todayDateKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getUploadBranchOptions(){
+  if(!CU) return [];
+  if(CU.role==='branch') return BR.filter(b=>String(b.id)===String(CU.scope));
+  if(CU.role==='supervisor') return BR.filter(b=>b.sup===CU.scope);
+  return BR;
+}
+function renderOnlineBranchOptions(){
+  const sel=document.getElementById('online-br');
+  if(!sel) return;
+  const options=getUploadBranchOptions();
+  const current=sel.value;
+  sel.innerHTML=options.map(b=>`<option value="${b.id}">${b.name} (${b.id})</option>`).join('');
+  if(options.some(b=>String(b.id)===String(current))) sel.value=current;
+  const dateEl=document.getElementById('online-date');
+  if(dateEl&&!dateEl.value) dateEl.value=todayDateKey();
+}
+async function saveOnlineSale(){
+  if(!canUpload()) return;
+  const msg=document.getElementById('online-msg');
+  const dateEl=document.getElementById('online-date');
+  const brEl=document.getElementById('online-br');
+  const revEl=document.getElementById('online-rev');
+  const carsEl=document.getElementById('online-cars');
+  const dateKey=String(dateEl?.value||'').trim();
+  const brId=String(brEl?.value||'').trim();
+  const rev=parseMoney(revEl?.value);
+  const cars=Math.max(0,Math.floor(parseFloat(carsEl?.value)||0));
+  const br=BR.find(b=>String(b.id)===brId);
+  const allowed=getUploadBranchOptions().some(b=>String(b.id)===brId);
+  if(!dateKey||!br){if(msg)msg.textContent='กรุณาเลือกวันที่และสาขา';return;}
+  if(!allowed){if(msg){msg.textContent='สิทธิ์ไม่อนุญาตสำหรับสาขานี้';msg.style.color='var(--red)';}return;}
+  if(!(rev>0)){if(msg){msg.textContent='กรุณากรอกยอดขายมากกว่า 0';msg.style.color='var(--red)';}return;}
+  const yr=parseInt(dateKey.slice(0,4))||new Date().getFullYear();
+  ensureBranchState(br);
+  const fullKey=`${dateKey}_${brId}`;
+  DAILY_EXTRA[fullKey]=(DAILY_EXTRA[fullKey]||0)+rev;
+  DAILY_RENT_BASE[fullKey]=(DAILY_RENT_BASE[fullKey]||0)+rev;
+  if(cars>0) DAILY_CARS[fullKey]=(DAILY_CARS[fullKey]||0)+cars;
+  DATA[brId].revByYear[yr]=(DATA[brId].revByYear[yr]||0)+rev;
+  DATA[brId].ordByYear[yr]=(DATA[brId].ordByYear[yr]||0)+cars;
+  DATA[brId].carsByYear[yr]=(DATA[brId].carsByYear[yr]||0)+cars;
+
+  const ts=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const log={
+    name:'ยอดขายออนไลน์',
+    date:dateKey.slice(0,7),
+    branch:br.name,
+    brId,
+    rev,
+    cars,
+    svcBreak:{'ออนไลน์':{rev,count:cars||1}},
+    ts,
+    dayRevMap:{[dateKey]:rev},
+    dayCarMap:cars>0?{[dateKey]:cars}:{},
+    dayRentBaseMap:{[dateKey]:rev},
+    source:'online',
+    year:yr,
+    savedAt:new Date().toISOString()
+  };
+  UPLOG.unshift(log);
+  if(msg){msg.textContent='กำลังบันทึก...';msg.style.color='var(--tx3)';}
+  await saveUploadLog(log);
+  renderUpLog();
+  if(revEl) revEl.value='';
+  if(carsEl) carsEl.value='';
+  if(msg){msg.textContent=`บันทึกยอดออนไลน์แล้ว ${fmt(rev)}`;msg.style.color='var(--green)';}
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
+
 let upLogPage=1; const UPLOG_PAGE_SIZE=20;
 function prevUpLogPage(){if(upLogPage>1){upLogPage--;renderUpLog();}}
 function nextUpLogPage(){upLogPage++;renderUpLog();}
+function logDateKeys(l){
+  return Object.keys(l?.dayRevMap||{}).sort();
+}
+function logPeriodLabel(l){
+  const keys=logDateKeys(l);
+  if(keys.length===1) return keys[0];
+  if(keys.length>1) return `${keys[0]} - ${keys[keys.length-1]}`;
+  return l?.date||'ไม่ระบุวันที่';
+}
+function logGroupKey(l){
+  const keys=logDateKeys(l);
+  return keys[0]||l?.date||'unknown';
+}
+function logSourceText(l){
+  return l?.source==='online'?'ออนไลน์':'Excel';
+}
 function renderUpLog(){
   const el=document.getElementById('uplog');
   // Filter visible entries by role
@@ -2432,27 +2684,62 @@ function renderUpLog(){
   if(upLogPage>totalPages) upLogPage=totalPages;
   const start=(upLogPage-1)*UPLOG_PAGE_SIZE;
   const paged=visible.slice(start,start+UPLOG_PAGE_SIZE);
-  const meta=document.getElementById('uplog-meta'); if(meta) meta.textContent=`หน้า ${upLogPage}/${totalPages} · ทั้งหมด ${visible.length} รายการ`;
+  const meta=document.getElementById('uplog-meta'); if(meta) meta.textContent=`หน้า ${upLogPage}/${totalPages} · ทั้งหมด ${visible.length} ไฟล์/รายการ`;
   if(!visible.length){el.innerHTML='<div style="color:var(--tx3);font-size:12px;text-align:center;padding:18px">ยังไม่มีประวัติ</div>';return;}
-  el.innerHTML=paged.map(l=>{
-    const i=l._i;
-    const canDelete=CU&&(CU.role==='admin'||CU.role==='supervisor'||l.brId===CU.scope);
-    const svcHTML=Object.entries(normalizeSvcBreak(l.svcBreak)).map(([cat,d])=>`<span class="imp-tag ${cat.includes('ซื้อ')?'imp-buy-pkg':cat.includes('ใช้')?'imp-use-pkg':'imp-normal'}" style="margin-right:3px">${cat}: ${d.count} (${fmt(d.rev)})</span>`).join('');
-    return`<div class="le" style="grid-template-columns:auto 1fr;flex-direction:column;gap:5px;align-items:flex-start">
-      <div style="display:flex;align-items:center;gap:8px;width:100%">
-        <div class="ldot" style="background:var(--green)"></div>
-        <div style="flex:1"><div style="font-size:13px;font-weight:500">${l.name}</div>
-        <div style="font-size:11px;color:var(--tx3)">${l.branch} · ${l.date} · ${l.cars} คัน · ${fmt(l.rev)}${l.workCount?' · เวลาเฉลี่ย '+fmtDuration(l.workMinutes/l.workCount):''}</div></div>
-        <div class="lt">${l.ts}</div>
-        ${canDelete?`<button onclick="deleteUpload(${i})" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);cursor:pointer;font-size:11px;padding:3px 9px;font-family:inherit" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='var(--red)'">ลบ</button>`:''}
+  const groups=[];
+  paged.forEach(l=>{
+    const key=logGroupKey(l);
+    let g=groups.find(x=>x.key===key);
+    if(!g){
+      g={key,label:logPeriodLabel(l),items:[],rev:0,cars:0,branches:new Set()};
+      groups.push(g);
+    }
+    g.items.push(l);
+    g.rev+=(+l.rev||0);
+    g.cars+=(+l.cars||0);
+    if(l.brId) g.branches.add(String(l.brId));
+  });
+  el.innerHTML=groups.map(g=>`
+    <details class="le" style="display:block;padding:0;background:var(--c1);overflow:hidden">
+      <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px">
+        <div class="ldot" style="background:var(--accent)"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${escHtml(g.label)}</div>
+          <div style="font-size:11px;color:var(--tx3)">${fN(g.items.length)} ไฟล์/รายการ · ${fN(g.branches.size)} สาขา · กดเพื่อดูไฟล์</div>
+        </div>
+        <div style="text-align:right">
+          <div class="mono" style="font-size:13px;font-weight:600;color:var(--green)">${fmt(g.rev)}</div>
+          <div style="font-size:10.5px;color:var(--tx3)">${fN(g.cars)} คัน</div>
+        </div>
+        <div style="font-size:14px;color:var(--tx3);padding-left:4px">▾</div>
+      </summary>
+      <div style="display:grid;gap:6px;border-top:1px solid rgba(31,48,85,.6);padding:8px 10px 10px">
+        ${g.items.map(l=>{
+          const i=l._i;
+          const canDelete=CU&&(CU.role==='admin'||(CU.role==='supervisor'&&BR.some(b=>String(b.id)===String(l.brId)&&b.sup===CU.scope)));
+          const svcHTML=Object.entries(normalizeSvcBreak(l.svcBreak)).map(([cat,d])=>`<span class="imp-tag ${cat.includes('ซื้อ')?'imp-buy-pkg':cat.includes('ใช้')?'imp-use-pkg':'imp-normal'}" style="margin-right:3px">${cat}: ${d.count} (${fmt(d.rev)})</span>`).join('');
+          return `<div style="background:var(--c2);border:1px solid var(--border);border-radius:7px;padding:8px 9px">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                  <span style="font-size:12.5px;font-weight:500;word-break:break-word">${escHtml(l.name)}</span>
+                  <span class="pbadge" style="font-size:9.5px">${logSourceText(l)}</span>
+                </div>
+                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${escHtml(l.branch)} · ${fN(l.cars||0)} คัน · ${fmt(l.rev||0)}${l.workCount?' · เวลาเฉลี่ย '+fmtDuration(l.workMinutes/l.workCount)+' (D→F '+fN(l.workCount)+'/'+fN(l.cars||0)+')':''}</div>
+              </div>
+              <div class="lt" style="padding-top:1px">${escHtml(l.ts||'')}</div>
+              ${canDelete?`<button onclick="deleteUpload(${i})" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);cursor:pointer;font-size:11px;padding:3px 9px;font-family:inherit" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='var(--red)'">ลบ</button>`:''}
+            </div>
+            ${svcHTML?`<div style="margin-top:6px;flex-wrap:wrap;display:flex;gap:3px">${svcHTML}</div>`:''}
+          </div>`;
+        }).join('')}
       </div>
-      ${svcHTML?`<div style="padding-left:15px;flex-wrap:wrap;display:flex;gap:3px">${svcHTML}</div>`:''}
-    </div>`;
-  }).join('');
+    </details>`).join('');
 }
 function deleteUpload(i){
-  if(!(CU&&(CU.role==='admin'||CU.role==='supervisor'||(UPLOG[i]&&UPLOG[i].brId===CU.scope)))) return;
   const l=UPLOG[i];if(!l)return;
+  const canDelete=CU&&(CU.role==='admin'||(CU.role==='supervisor'&&BR.some(b=>String(b.id)===String(l.brId)&&b.sup===CU.scope)));
+  if(!canDelete) return;
   if(l.brId){
     if(l.dayRevMap){
       Object.entries(l.dayRevMap).forEach(([dateKey,rev])=>{
@@ -2596,6 +2883,7 @@ function go(view,el){
   else scheduleRefresh('light');
   if(view==='daily') requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches') requestAnimationFrame(()=>renderBranchTable());
+  if(view==='upload') requestAnimationFrame(()=>{renderOnlineBranchOptions();renderUpLog();});
   if(view==='users') requestAnimationFrame(()=>renderUsers());
 }
 
@@ -2611,6 +2899,7 @@ function mobGo(view,el){
   else scheduleRefresh('light');
   if(view==='daily')requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches')requestAnimationFrame(()=>renderBranchTable());
+  if(view==='upload')requestAnimationFrame(()=>{renderOnlineBranchOptions();renderUpLog();});
   if(view==='users')requestAnimationFrame(()=>renderUsers());
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
@@ -2628,12 +2917,78 @@ function mobChangePeriod(mode){
   if(mEl) mEl.style.display=mode==='month'?'flex':'none';
   changePeriod();
 }
+function syncMobileFilterSheet(){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  const setValue=(id,value)=>{const el=document.getElementById(id);if(el&&value!==undefined&&value!==null)el.value=String(value);};
+  setValue('mob-period-sel',mode);
+  setValue('mob-m',document.getElementById('dp-m')?.value);
+  setValue('mob-y',document.getElementById('dp-y')?.value);
+  setValue('mob-date-single',document.getElementById('dp-date')?.value);
+  setValue('mob-from',document.getElementById('dp-from')?.value);
+  setValue('mob-to',document.getElementById('dp-to')?.value);
+  const mobYearSel=document.querySelector('#mob-dp-year select');
+  if(mobYearSel) mobYearSel.value=document.getElementById('dp-yr')?.value||String(CY);
+  ['month','day','week','year'].forEach(m=>{
+    const el=document.getElementById('mob-dp-'+m);
+    if(el) el.style.display=m===mode?'':'none';
+  });
+  const monthBox=document.getElementById('mob-dp-month');
+  if(monthBox) monthBox.style.display=mode==='month'?'flex':'none';
+  const brandSel=document.querySelector('#mob-brand-fl select');
+  if(brandSel) brandSel.value=document.getElementById('fBrand')?.value||activeBrand||'all';
+  const regionSel=document.querySelector('#mob-region-fl select');
+  if(regionSel) regionSel.value=document.getElementById('fRegion')?.value||activeRegion||'all';
+  const supSel=document.getElementById('mob-sup-sel');
+  if(supSel) supSel.value=document.getElementById('fSup')?.value||activeSup||'all';
+  renderMobBranchList();
+}
+function renderMobBranchList(){
+  const wrap=document.getElementById('mob-branch-list');
+  const count=document.getElementById('mob-branch-count');
+  if(!wrap) return;
+  const pool=getFilteredPool();
+  if(count) count.textContent=`เลือก ${fN(pool.filter(b=>selBr.has(b.id)).length)} / ${fN(pool.length)} สาขา`;
+  if(!pool.length){
+    wrap.innerHTML='<div style="color:var(--tx3);font-size:12px;text-align:center;padding:10px">ไม่พบสาขา</div>';
+    return;
+  }
+  wrap.innerHTML=pool.map(b=>`
+    <label class="bc-item ${selBr.has(b.id)?'on':''}" style="padding:7px 8px;background:var(--c2);border:1px solid var(--border);border-radius:7px;margin-bottom:5px">
+      <input type="checkbox" ${selBr.has(b.id)?'checked':''} ${CU&&CU.role==='branch'?'disabled':''}
+        style="width:14px;height:14px;accent-color:${BC[b.brand]};flex-shrink:0"
+        onchange="mobToggleBranch('${b.id}',this.checked,this.closest('label'))">
+      <span style="font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(b.name)}</span>
+      <span class="bc-code">${escHtml(b.id)}</span>
+    </label>`).join('');
+}
+function mobToggleBranch(id,checked,labelEl){
+  if(CU&&CU.role==='branch') return;
+  if(checked){selBr.add(id);labelEl?.classList.add('on');}
+  else{selBr.delete(id);labelEl?.classList.remove('on');}
+  buildBcList();
+  const count=document.getElementById('mob-branch-count');
+  const pool=getFilteredPool();
+  if(count) count.textContent=`เลือก ${fN(pool.filter(b=>selBr.has(b.id)).length)} / ${fN(pool.length)} สาขา`;
+  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
+function mobSelectAllBranches(){
+  if(CU&&CU.role==='branch') return;
+  getFilteredPool().forEach(b=>selBr.add(b.id));
+  buildBcList();renderMobBranchList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
+function mobSelectNoBranches(){
+  if(CU&&CU.role==='branch') return;
+  getFilteredPool().forEach(b=>selBr.delete(b.id));
+  buildBcList();renderMobBranchList();scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
 function mobOpenSheet(){
   const ms=document.getElementById('mob-sup-sel');
   if(ms)ms.innerHTML=document.getElementById('fSup').innerHTML;
   const isBranch=CU&&CU.role==='branch',isSup=CU&&CU.role==='supervisor';
   ['mob-brand-fl','mob-region-fl'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=isBranch?'none':'';});
   const sf=document.getElementById('mob-sup-fl');if(sf)sf.style.display=(isBranch||isSup)?'none':'';
+  const bf=document.getElementById('mob-branch-fl');if(bf)bf.style.display=isBranch?'none':'';
+  syncMobileFilterSheet();
   document.getElementById('mob-sheet').classList.add('open');
 }
 function mobCloseSheet(){document.getElementById('mob-sheet').classList.remove('open');}
@@ -2715,6 +3070,7 @@ async function saveUploadLog(logObj){
     delete toSave._docId;
     toSave.savedAt=new Date().toISOString();
     const docRef=await db.collection('upload_logs').add(toSave);
+    logObj.savedAt=toSave.savedAt;
     logObj._docId=docRef.id;
   }catch(e){console.error('saveUploadLog:',e);}
 }
@@ -2740,6 +3096,8 @@ async function loadBranchMaster(){
         rebuildBranchMaps();
         renderBranchAdminControls();
         buildBcList();
+        renderMobBranchList();
+        renderOnlineBranchOptions();
       }
     }
   }catch(e){console.error('loadBranchMaster:',e);}
@@ -3034,6 +3392,17 @@ else usersLoaded=true;
       <select class="fsel" id="mob-sup-sel" onchange="document.getElementById('fSup').value=this.value;applySup()">
         <option value="all">ทุกผู้ดูแล</option>
       </select>
+    </div>
+    <div id="mob-branch-fl" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px">สาขา</label>
+        <span id="mob-branch-count" style="font-size:10.5px;color:var(--tx3)"></span>
+      </div>
+      <div class="bc-ctrl" style="margin-bottom:7px">
+        <button onclick="mobSelectAllBranches()">ทุกสาขาในตัวกรอง</button>
+        <button onclick="mobSelectNoBranches()">ล้าง</button>
+      </div>
+      <div id="mob-branch-list" style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--c0)"></div>
     </div>
     <button onclick="mobCloseSheet()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;margin-top:4px">ปิด</button>
   </div>
