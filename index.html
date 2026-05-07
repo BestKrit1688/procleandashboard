@@ -486,11 +486,11 @@ details.le>summary::-webkit-details-marker{display:none}
           <div class="pwrap" style="height:90px"><canvas id="ch-sup" role="img" aria-label="ผู้ดูแล"></canvas></div>
         </div>
         <div class="panel">
-          <div class="ph"><span class="pt">แบรนด์ & ขนาดรถ</span></div>
-          <div class="pwrap" style="height:150px"><canvas id="ch-brand" role="img" aria-label="แบรนด์"></canvas></div>
+          <div class="ph"><span class="pt">ลูกค้าใหม่ & ลูกค้าเก่า</span></div>
+          <div class="pwrap" style="height:150px"><canvas id="ch-brand" role="img" aria-label="ลูกค้าใหม่และลูกค้าเก่า"></canvas></div>
           <div id="brand-leg" style="display:flex;flex-wrap:wrap;gap:6px;margin:7px 0;font-size:10.5px"></div>
           <div class="divider"></div>
-          <div class="pwrap" style="height:100px"><canvas id="ch-size" role="img" aria-label="ขนาด"></canvas></div>
+          <div class="pwrap" style="height:100px"><canvas id="ch-size" role="img" aria-label="ลูกค้าใหม่และลูกค้าเก่า"></canvas></div>
         </div>
       </div>
     </div>
@@ -699,7 +699,7 @@ let BR = [
   {id:'cla',name:'เซ็นทรัลลาดพร้าว',sup:'Sup Best',brand:'central',region:'bkk'},
   {id:'cub',name:'เซ็นทรัล อุบลฯ',sup:'Sup Per',brand:'central',region:'northeast'},
   {id:'cfc',name:'เซ็นทรัลเฟสติวัล เชียงใหม่',sup:'Sup Wut',brand:'central',region:'north'},
-  {id:'ccb',name:'เซ็นทรัลชลบุรี',sup:'Sup Poo',brand:'central',region:'east'},
+  {id:'ccb',name:'เซ็นทรัลชลบุรี 2',sup:'Sup Poo',brand:'central',region:'east'},
   {id:'ctry',name:'เซ็นทรัลระยอง',sup:'Sup Poo',brand:'central',region:'east'},
   {id:'csly',name:'เซ็นทรัลศาลายา',sup:'Sup Best',brand:'central',region:'bkk'},
   {id:'ctwg',name:'เซ็นทรัลเวสเกสต์',sup:'Sup Best',brand:'central',region:'bkk'},
@@ -742,7 +742,7 @@ let BR = [
 ];
 const BR_ID_ALIASES={orb:'crb',cip:'clp',ctib:'ctjb',ccti:'ccb',rar:'rsu',mcs:'rccs',mbh:'rmdh',hd:'ho',rta:'rtr'};
 function canonBrId(id){return BR_ID_ALIASES[String(id||'')]||String(id||'');}
-const CANON_BRANCH_NAMES={crb:'เซ็นทรัลรัตนาธิเบศน์',clp:'เซ็นทรัลลำปาง',ctjb:'เซ็นทรัลจันทบุรี',ccb:'เซ็นทรัลชลบุรี',rsu:'โรบินสันสุรินทร์',rccs:'โรบินสันฉะเชิงเทรา',rmdh:'โรบินสันมุกดาหาร',ho:'สำนักงานใหญ่',rtr:'โรบินสันตรัง'};
+const CANON_BRANCH_NAMES={crb:'เซ็นทรัลรัตนาธิเบศน์',clp:'เซ็นทรัลลำปาง',ctjb:'เซ็นทรัลจันทบุรี',ccb:'เซ็นทรัลชลบุรี 2',rsu:'โรบินสันสุรินทร์',rccs:'โรบินสันฉะเชิงเทรา',rmdh:'โรบินสันมุกดาหาร',ho:'สำนักงานใหญ่',rtr:'โรบินสันตรัง'};
 // Sheet name → branch id mapping (for Excel auto-detect)
 const SHEET_TO_ID = {};
 // Strip ALL spaces for fuzzy match
@@ -802,6 +802,8 @@ const D1R={};
 const DAILY_EXTRA={}; // key = "YYYY-MM-DD_brId" e.g. "2026-04-24_cpr9"
 const DAILY_CARS={};  // key = "YYYY-MM-DD_brId" — จำนวนรถรายวัน
 const DAILY_RENT_BASE={}; // key = "YYYY-MM-DD_brId" — revenue used for rent formula, excluding service charge rows
+const DAILY_NEW_CUSTOMERS={}; // key = "YYYY-MM-DD_brId" — AG = Y
+const DAILY_OLD_CUSTOMERS={}; // key = "YYYY-MM-DD_brId" — AG = N
 function getDR(d,id){
   // Build full date key from current period context
   const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:getLatestYear();
@@ -872,6 +874,8 @@ function removeBranchState(id){
   Object.keys(DAILY_EXTRA).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_EXTRA[k];});
   Object.keys(DAILY_CARS).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_CARS[k];});
   Object.keys(DAILY_RENT_BASE).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_RENT_BASE[k];});
+  Object.keys(DAILY_NEW_CUSTOMERS).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_NEW_CUSTOMERS[k];});
+  Object.keys(DAILY_OLD_CUSTOMERS).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_OLD_CUSTOMERS[k];});
   bumpDataVersion();
 }
 
@@ -916,10 +920,10 @@ let menuOvMode='rev';
 let brFilteredIds=null; // null = all
 const CH={};
 let DATA_VERSION=0;
-const PERIOD_CACHE={years:null,yearsVer:-1,rev:new Map(),rent:new Map(),cars:new Map(),work:new Map()};
+const PERIOD_CACHE={years:null,yearsVer:-1,rev:new Map(),rent:new Map(),cars:new Map(),cust:new Map(),work:new Map()};
 function clearPeriodCache(){
   PERIOD_CACHE.years=null;PERIOD_CACHE.yearsVer=-1;
-  PERIOD_CACHE.rev.clear();PERIOD_CACHE.rent.clear();PERIOD_CACHE.cars.clear();PERIOD_CACHE.work.clear();
+  PERIOD_CACHE.rev.clear();PERIOD_CACHE.rent.clear();PERIOD_CACHE.cars.clear();PERIOD_CACHE.cust.clear();PERIOD_CACHE.work.clear();
 }
 function bumpDataVersion(){DATA_VERSION++;clearPeriodCache();}
 function periodCacheKey(kind,id,yr){
@@ -1214,9 +1218,26 @@ function getCostPeriodLabel(){
   const mEl=document.getElementById('dp-m');
   const yEl=document.getElementById('dp-y');
   const mN=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  if(mode==='year'){
+    const yr=document.getElementById('dp-yr')?.value||String(CY);
+    return yr==='all'?'ทุกปี':`ปี ${yr}`;
+  }
   if(!mEl||!yEl) return '';
   const m=Math.max(1,Math.min(12,parseInt(mEl.value)||1));
   return `${mN[m-1]} ${yEl.value}`;
+}
+function getCostPeriodSpec(){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  if(mode==='year'){
+    const raw=document.getElementById('dp-yr')?.value||String(CY);
+    return raw==='all'?{mode:'all'}:{mode:'year',year:parseInt(raw)||getLatestYear()};
+  }
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  const month=Math.max(1,Math.min(12,parseInt(mEl?.value)||new Date().getMonth()+1));
+  const year=parseInt(yEl?.value)||new Date().getFullYear();
+  return {mode:'month',year,month,key:`${year}_${String(month).padStart(2,'0')}`};
 }
 
 function getPeriodRevenue(id){
@@ -1339,6 +1360,40 @@ function getPeriodCars(id){
   PERIOD_CACHE.cars.set(cKey,total);
   return total;
 }
+function getPeriodCustomerCounts(id){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  const yr=(typeof CY!=='undefined'&&CY!=='all')?CY:((mode==='year'&&document.getElementById('dp-yr')?.value==='all')?'all':getLatestYear());
+  const cKey=periodCacheKey('cust',id,yr);
+  if(PERIOD_CACHE.cust.has(cKey)) return PERIOD_CACHE.cust.get(cKey);
+  const out={new:0,old:0};
+  if(mode==='year'){
+    Object.keys(DAILY_NEW_CUSTOMERS).forEach(k=>{
+      if((yr==='all'||k.startsWith(`${yr}-`))&&k.endsWith(`_${id}`)) out.new+=DAILY_NEW_CUSTOMERS[k]||0;
+    });
+    Object.keys(DAILY_OLD_CUSTOMERS).forEach(k=>{
+      if((yr==='all'||k.startsWith(`${yr}-`))&&k.endsWith(`_${id}`)) out.old+=DAILY_OLD_CUSTOMERS[k]||0;
+    });
+    PERIOD_CACHE.cust.set(cKey,out);
+    return out;
+  }
+  const mEl=document.getElementById('dp-m');
+  const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
+  getPeriodDays().forEach(d=>{
+    const dd=String(d).padStart(2,'0');
+    const key=`${yr}-${mm}-${dd}_${id}`;
+    out.new+=DAILY_NEW_CUSTOMERS[key]||0;
+    out.old+=DAILY_OLD_CUSTOMERS[key]||0;
+  });
+  PERIOD_CACHE.cust.set(cKey,out);
+  return out;
+}
+function getSelectedCustomerCounts(sel=getSel()){
+  return sel.reduce((acc,b)=>{
+    const c=getPeriodCustomerCounts(b.id);
+    acc.new+=c.new;acc.old+=c.old;
+    return acc;
+  },{new:0,old:0});
+}
 function getPeriodOrd(id){
   // Orders = same logic as cars for now (1 order per car)
   return getPeriodCars(id);
@@ -1385,8 +1440,10 @@ function refresh(scope='all'){
   syncFormulaRents(sel);
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
-  const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
+  const customerCounts=getSelectedCustomerCounts(sel);
+  const tNew=customerCounts.new;
+  const avgPerCar=tCars>0?tRev/tCars:null;
   const workStats=getPeriodWorkStats(sel);
   const avgWork=workStats.count?workStats.minutes/workStats.count:null;
   // cost
@@ -1406,7 +1463,7 @@ function refresh(scope='all'){
     <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
-    <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
+    <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
     <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
 
   const brL=sel.length===BR.length?'ทุกสาขา':sel.length<=2?sel.map(b=>b.id).join(', '):`${sel.length} สาขา`;
@@ -1824,19 +1881,22 @@ function drawBranchChart(){
 
 function drawBrandChart(){
   dc('brand');
-  const sel=getSel().map(b=>({...b,_rev:getPeriodRevenue(b.id)}));
-  const bm={central:0,lotus:0,bigc:0,other:0};
-  sel.forEach(b=>{bm[b.brand]=(bm[b.brand]||0)+b._rev;});
-  const labels=['Central','Lotus','Big C','อื่นๆ'];
-  const vals=[bm.central,bm.lotus,bm.bigc,bm.other];
-  const colors=[BC.central,BC.lotus,BC.bigc,BC.other];
-  document.getElementById('brand-leg').innerHTML=labels.map((l,i)=>`<span style="display:flex;align-items:center;gap:4px;color:var(--tx2);font-size:10.5px"><span style="width:7px;height:7px;border-radius:2px;background:${colors[i]};display:inline-block"></span>${l}: ${fmt(vals[i])}</span>`).join('');
-  CH['brand']=new Chart(document.getElementById('ch-brand'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0f1628'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,normalized:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>i.label+': '+fmt(i.raw)}}}}});
+  const counts=getSelectedCustomerCounts();
+  const labels=['ลูกค้าใหม่','ลูกค้าเก่า'];
+  const vals=[counts.new,counts.old];
+  const total=vals[0]+vals[1];
+  const colors=['#22c55e','#3b82f6'];
+  document.getElementById('brand-leg').innerHTML=labels.map((l,i)=>{
+    const pct=total>0?(vals[i]/total*100).toFixed(1):'0.0';
+    return `<span style="display:flex;align-items:center;gap:4px;color:var(--tx2);font-size:10.5px"><span style="width:7px;height:7px;border-radius:2px;background:${colors[i]};display:inline-block"></span>${l}: ${fN(vals[i])} (${pct}%)</span>`;
+  }).join('');
+  CH['brand']=new Chart(document.getElementById('ch-brand'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0f1628'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:false,normalized:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.label}: ${fN(i.raw)} คัน`}}}}});
 }
 
 function drawSizeChart(){
   dc('size');
-  CH['size']=new Chart(document.getElementById('ch-size'),{type:'bar',data:{labels:SIZES.map(s=>s.s),datasets:[{data:SIZES.map(s=>s.r),backgroundColor:['#3b82f6','#22c55e','#a855f7'],borderRadius:4,borderSkipped:false}]},options:{...baseO,indexAxis:'y',scales:{x:{...baseO.scales.x,ticks:{...baseO.scales.x.ticks,callback:v=>'฿'+(v/1000000).toFixed(1)+'M'}},y:{...baseO.scales.y,grid:{display:false}}},plugins:{legend:{display:false}}}});
+  const counts=getSelectedCustomerCounts();
+  CH['size']=new Chart(document.getElementById('ch-size'),{type:'bar',data:{labels:['ลูกค้าใหม่','ลูกค้าเก่า'],datasets:[{data:[counts.new,counts.old],backgroundColor:['#22c55e','#3b82f6'],borderRadius:4,borderSkipped:false}]},options:{...baseO,indexAxis:'y',scales:{x:{...baseO.scales.x,ticks:{...baseO.scales.x.ticks,callback:v=>fN(v)+' คัน'}},y:{...baseO.scales.y,grid:{display:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>fN(i.raw)+' คัน'}}}}});
 }
 
 function drawCmpChart(){
@@ -2052,8 +2112,10 @@ function refreshOverviewOnly(){
   syncFormulaRents(sel);
   const tRev=sel.reduce((s,b)=>s+getPeriodRevenue(b.id),0);
   const tOrd=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
-  const tNew=Math.round(tRev/4200);
   const tCars=sel.reduce((s,b)=>s+getPeriodCars(b.id),0);
+  const customerCounts=getSelectedCustomerCounts(sel);
+  const tNew=customerCounts.new;
+  const avgPerCar=tCars>0?tRev/tCars:null;
   const workStats=getPeriodWorkStats(sel);
   const avgWork=workStats.count?workStats.minutes/workStats.count:null;
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
@@ -2069,7 +2131,7 @@ function refreshOverviewOnly(){
     <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
-    <div class="kpi p"><div class="kl">ลูกค้าใหม่</div><div class="kv">${fN(tNew)}</div><div class="ks neu">เดือนนี้</div></div>
+    <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
     <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
@@ -2409,6 +2471,12 @@ function getCol(row,index){
   if(row&&Array.isArray(row.__cols)&&row.__cols[index]!==undefined) return row.__cols[index];
   return '';
 }
+function getCustomerFlag(row){
+  const raw=normText(getCol(row,32)||getField(row,'ลูกค้าใหม่','New Customer','new customer')).toUpperCase();
+  if(raw==='Y') return 'new';
+  if(raw==='N') return 'old';
+  return '';
+}
 function getStatusValue(row){
   return getCol(row,1)||getField(row,'สถานะใบงาน');
 }
@@ -2621,8 +2689,12 @@ function importData(){
   const dayCarMap={};   // key = "YYYY-MM-DD" — นับรถรายวัน
   const dayRentBaseMap={}; // key = "YYYY-MM-DD" — ยอดฐานค่าเช่า ไม่รวมค่าบริการ
   const dayWorkMap={};  // key = "YYYY-MM-DD" — {minutes,count}
+  const dayNewMap={};   // key = "YYYY-MM-DD" — column AG = Y
+  const dayOldMap={};   // key = "YYYY-MM-DD" — column AG = N
   let workMinutes=0;
   let workCount=0;
+  let newCustomers=0;
+  let oldCustomers=0;
   let detectedYear=null;
 
   completed.forEach(r=>{
@@ -2654,6 +2726,16 @@ function importData(){
     }
     const dur=getWorkDurationMinutes(r);
     const dateKey=rowDateKey(r,fileDate);
+    const customerFlag=getCustomerFlag(r);
+    if(customerFlag&&dateKey){
+      if(customerFlag==='new'){
+        newCustomers++;
+        dayNewMap[dateKey]=(dayNewMap[dateKey]||0)+1;
+      }else if(customerFlag==='old'){
+        oldCustomers++;
+        dayOldMap[dateKey]=(dayOldMap[dateKey]||0)+1;
+      }
+    }
     if(dur!==null&&dateKey){
       workMinutes+=dur;
       workCount++;
@@ -2685,7 +2767,7 @@ function importData(){
   const logDate=firstDate.slice(0,7)||`${yr}-??`; // YYYY-MM
   const ts=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'?';
-  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,dayRentBaseMap,dayWorkMap,workMinutes,workCount,year:yr});
+  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,dayRentBaseMap,dayWorkMap,dayNewMap,dayOldMap,workMinutes,workCount,newCustomers,oldCustomers,year:yr});
   // Store daily cars in DAILY_CARS
   if(detectedBrId){
     Object.entries(dayCarMap).forEach(([dateKey,cars])=>{
@@ -2696,12 +2778,20 @@ function importData(){
       const rk=`${dateKey}_${detectedBrId}`;
       DAILY_RENT_BASE[rk]=(DAILY_RENT_BASE[rk]||0)+rev;
     });
+    Object.entries(dayNewMap).forEach(([dateKey,count])=>{
+      const nk=`${dateKey}_${detectedBrId}`;
+      DAILY_NEW_CUSTOMERS[nk]=(DAILY_NEW_CUSTOMERS[nk]||0)+count;
+    });
+    Object.entries(dayOldMap).forEach(([dateKey,count])=>{
+      const ok=`${dateKey}_${detectedBrId}`;
+      DAILY_OLD_CUSTOMERS[ok]=(DAILY_OLD_CUSTOMERS[ok]||0)+count;
+    });
   }
   bumpDataVersion();
   saveUploadLog(UPLOG[0]); // บันทึกลง Firebase
   renderUpLog();
 
-  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน)${workCount?' · เวลาเฉลี่ย '+fmtDuration(workMinutes/workCount)+' · รวม '+fN(workMinutes)+' นาที (D→F '+fN(workCount)+'/'+fN(totalCars)+')':''}`;
+  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน) · ลูกค้าใหม่ ${fN(newCustomers)} / เก่า ${fN(oldCustomers)}${workCount?' · เวลาเฉลี่ย '+fmtDuration(workMinutes/workCount)+' · รวม '+fN(workMinutes)+' นาที (D→F '+fN(workCount)+'/'+fN(totalCars)+')':''}`;
   PENDING=null;
   setTimeout(()=>{
     document.getElementById('prev-wrap').style.display='none';
@@ -2894,6 +2984,16 @@ function deleteUpload(i){
           const rk=`${dateKey}_${l.brId}`;
           DAILY_RENT_BASE[rk]=Math.max(0,(DAILY_RENT_BASE[rk]||0)-l.dayRentBaseMap[dateKey]);
           if(DAILY_RENT_BASE[rk]===0) delete DAILY_RENT_BASE[rk];
+        }
+        if(l.dayNewMap&&l.dayNewMap[dateKey]){
+          const nk=`${dateKey}_${l.brId}`;
+          DAILY_NEW_CUSTOMERS[nk]=Math.max(0,(DAILY_NEW_CUSTOMERS[nk]||0)-l.dayNewMap[dateKey]);
+          if(DAILY_NEW_CUSTOMERS[nk]===0) delete DAILY_NEW_CUSTOMERS[nk];
+        }
+        if(l.dayOldMap&&l.dayOldMap[dateKey]){
+          const ok=`${dateKey}_${l.brId}`;
+          DAILY_OLD_CUSTOMERS[ok]=Math.max(0,(DAILY_OLD_CUSTOMERS[ok]||0)-l.dayOldMap[dateKey]);
+          if(DAILY_OLD_CUSTOMERS[ok]===0) delete DAILY_OLD_CUSTOMERS[ok];
         }
       });
     } else if(l.day){
@@ -3156,6 +3256,8 @@ async function loadUploadLogs(){
     Object.keys(DAILY_EXTRA).forEach(k=>delete DAILY_EXTRA[k]);
     Object.keys(DAILY_CARS).forEach(k=>delete DAILY_CARS[k]);
     Object.keys(DAILY_RENT_BASE).forEach(k=>delete DAILY_RENT_BASE[k]);
+    Object.keys(DAILY_NEW_CUSTOMERS).forEach(k=>delete DAILY_NEW_CUSTOMERS[k]);
+    Object.keys(DAILY_OLD_CUSTOMERS).forEach(k=>delete DAILY_OLD_CUSTOMERS[k]);
     BR.forEach(b=>{DATA[b.id].revByYear={};DATA[b.id].ordByYear={};DATA[b.id].carsByYear={};});
     snap.forEach(doc=>{
       const d=doc.data();
@@ -3186,6 +3288,18 @@ async function loadUploadLogs(){
           Object.entries(d.dayRevMap).forEach(([dateKey,rev])=>{
             const rk=`${dateKey}_${brId}`;
             DAILY_RENT_BASE[rk]=(DAILY_RENT_BASE[rk]||0)+rev;
+          });
+        }
+        if(d.dayNewMap){
+          Object.entries(d.dayNewMap).forEach(([dateKey,count])=>{
+            const nk=`${dateKey}_${brId}`;
+            DAILY_NEW_CUSTOMERS[nk]=(DAILY_NEW_CUSTOMERS[nk]||0)+count;
+          });
+        }
+        if(d.dayOldMap){
+          Object.entries(d.dayOldMap).forEach(([dateKey,count])=>{
+            const ok=`${dateKey}_${brId}`;
+            DAILY_OLD_CUSTOMERS[ok]=(DAILY_OLD_CUSTOMERS[ok]||0)+count;
           });
         }
       }
@@ -3274,16 +3388,18 @@ async function loadBranchData(){
       const curKey=`${yy}_${mm}`;
       if(d.rentRule) RENT_RULE[id]={type:d.rentRule.type||'manual',min:+d.rentRule.min||0,fixed:+d.rentRule.fixed||0,rate:+d.rentRule.rate||28};
       if(d.costs) branchMonthlyCosts[id]=d.costs;
-      if(COST[id]){
-        if(d.costs&&d.costs[curKey]){
-          COST[id].labor=d.costs[curKey].labor||0;
-          COST[id].rent=d.costs[curKey].rent||0;
-          COST[id].service=d.costs[curKey].service||0;
-        } else {
-          COST[id].labor=d.labor||0;
-          COST[id].rent=d.rent||0;
-          COST[id].service=d.service||0;
+      else{
+        const legacyCost={labor:+d.labor||0,rent:+d.rent||0,service:+d.service||0};
+        if(legacyCost.labor||legacyCost.rent||legacyCost.service){
+          branchMonthlyCosts[id]={[curKey]:legacyCost};
         }
+      }
+      if(COST[id]){
+        const monthly=branchMonthlyCosts[id]||{};
+        const c=monthly[curKey]||{labor:0,rent:0,service:0};
+        COST[id].labor=c.labor||0;
+        COST[id].rent=c.rent||0;
+        COST[id].service=c.service||0;
         syncFormulaRentForBranch(id);
       }
       // restore supervisor
@@ -3305,21 +3421,24 @@ async function loadBranchData(){
 // Load target for a specific year+month
 
 function loadCostForPeriod(){
-  const mEl=document.getElementById('dp-m');
-  const yEl=document.getElementById('dp-y');
-  if(!mEl||!yEl) return;
-  const mm=String(parseInt(mEl.value)).padStart(2,'0');
-  const yy=yEl.value;
-  const key=`${yy}_${mm}`;
+  const spec=getCostPeriodSpec();
   BR.forEach(b=>{
-    const monthly=branchMonthlyCosts[b.id];
-    if(monthly&&monthly[key]){
-      COST[b.id].labor=monthly[key].labor||0;
-      COST[b.id].rent=monthly[key].rent||0;
-      COST[b.id].service=monthly[key].service||0;
-    }else if(monthly){
-      COST[b.id].labor=0; COST[b.id].rent=0; COST[b.id].service=0;
+    const monthly=branchMonthlyCosts[b.id]||{};
+    let cost={labor:0,rent:0,service:0};
+    if(spec.mode==='month'){
+      cost=monthly[spec.key]||cost;
+    }else{
+      const prefix=spec.mode==='year'?`${spec.year}_`:null;
+      Object.entries(monthly).forEach(([key,c])=>{
+        if(prefix&& !key.startsWith(prefix)) return;
+        cost.labor+=(+c.labor||0);
+        cost.rent+=(+c.rent||0);
+        cost.service+=(+c.service||0);
+      });
     }
+    COST[b.id].labor=cost.labor||0;
+    COST[b.id].rent=cost.rent||0;
+    COST[b.id].service=cost.service||0;
     syncFormulaRentForBranch(b.id);
   });
 }
