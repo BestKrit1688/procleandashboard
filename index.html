@@ -104,12 +104,11 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
 
 /* KPI */
 .kg{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:12px}
-.kg5{grid-template-columns:repeat(5,1fr)}
 .kpi{background:var(--c1);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;position:relative;overflow:hidden}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .kpi.b::after{background:var(--accent)}.kpi.g::after{background:var(--green)}
 .kpi.a::after{background:var(--amber)}.kpi.p::after{background:var(--purple)}.kpi.t::after{background:var(--teal)}.kpi.r::after{background:var(--red)}
-.kl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.kl{font-size:12px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .kv{font-size:21px;font-weight:600;line-height:1;font-family:'IBM Plex Mono',monospace}
 .ks{font-size:11px;margin-top:5px}
 .up{color:var(--green)}.dn{color:var(--red)}.neu{color:var(--tx3)}
@@ -120,7 +119,7 @@ html,body{height:100%;background:var(--c0);color:var(--tx);overflow:hidden}
 .r32{grid-template-columns:3fr 2fr}
 .panel{background:var(--c1);border:1px solid var(--border);border-radius:var(--r);padding:13px}
 .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:7px;flex-wrap:wrap}
-.pt{font-size:13px;font-weight:600;flex-shrink:0}
+.pt{font-size:14px;font-weight:600;flex-shrink:0}
 .pbadge{font-size:10.5px;padding:2px 8px;border-radius:10px;background:var(--acl);color:var(--accent)}
 .pwrap{position:relative}
 .divider{height:1px;background:var(--border);margin:10px 0}
@@ -246,8 +245,9 @@ details.le>summary::-webkit-details-marker{display:none}
 
 /* cost KPI mini */
 .cost-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;margin-bottom:11px}
+.work-kpi-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .ckpi{background:var(--c0);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
-.ck-lbl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.ck-lbl{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
 .ck-val{font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace}
 
 .mono{font-family:'IBM Plex Mono',monospace}
@@ -261,7 +261,7 @@ details.le>summary::-webkit-details-marker{display:none}
   #ct{padding:10px 10px 68px;flex:1}
   #tog{display:none}
   .tb-meta{display:none}
-  .kg,.kg5{grid-template-columns:1fr 1fr !important}
+  .kg{grid-template-columns:1fr 1fr !important}
   .row.r2,.row.r3,.row.r32{grid-template-columns:1fr !important}
   .tw{overflow-x:auto}
   .dtbl{min-width:580px}
@@ -270,6 +270,7 @@ details.le>summary::-webkit-details-marker{display:none}
   .lcard{width:92vw;padding:24px 16px}
   #mob-bar{display:flex !important}
   #mob-fab{display:flex !important;z-index:9999 !important;pointer-events:auto !important}
+  .work-kpi-row{grid-template-columns:1fr !important}
 }
 @media(min-width:701px){
   #mob-bar,#mob-fab,#mob-sheet{display:none !important}
@@ -414,24 +415,23 @@ details.le>summary::-webkit-details-marker{display:none}
     <!-- ═══ OVERVIEW ═══ -->
     <div id="v-overview" class="view on">
       <!-- Main KPI -->
-      <div class="kg kg5" id="kpi-main"></div>
+      <div class="kg" id="kpi-main"></div>
+
+      <div class="panel" style="margin-bottom:11px" id="work-ov-panel">
+        <div class="ph">
+          <span class="pt">ระยะเวลาการทำงาน</span>
+          <span class="pbadge">คำนวณจากคอลัมน์ D → F</span>
+        </div>
+        <div class="work-kpi-row" id="work-ov-kpi"></div>
+      </div>
 
       <!-- Target bar -->
       <div class="panel" style="margin-bottom:11px" id="tgt-panel">
         <div class="ph">
-          <span class="pt">เปรียบเทียบต่อเป้า</span>
-          <span style="font-size:11px;color:var(--tx3)">ดึงจากเป้าที่กรอกในหน้าสาขา — อัปเดตอัตโนมัติ</span>
+          <span class="pt">เป้าและคาดการณ์</span>
+          <span style="font-size:11px;color:var(--tx3)">รวมความคืบหน้าต่อเป้าและคาดการณ์สิ้นเดือน</span>
         </div>
         <div id="tgt-body"><div style="color:var(--tx3);font-size:12px;text-align:center;padding:14px">กรอกเป้าสาขาในหน้า "สาขา" → เป้าจะแสดงที่นี่อัตโนมัติ</div></div>
-      </div>
-
-      <!-- Forecast panel -->
-      <div class="panel" style="margin-bottom:11px" id="forecast-panel">
-        <div class="ph">
-          <span class="pt">คาดการณ์ยอดสิ้นเดือน</span>
-          <span class="pbadge" id="fc-badge">อัปเดตอัตโนมัติ</span>
-        </div>
-        <div id="fc-body"><div style="color:var(--tx3);font-size:12px;text-align:center;padding:10px">กำลังคำนวณ...</div></div>
       </div>
 
       <!-- Cost KPI on overview -->
@@ -461,7 +461,13 @@ details.le>summary::-webkit-details-marker{display:none}
       </div>
       <div class="row r2">
         <div class="panel">
-          <div class="ph"><span class="pt">ยอดขายตามสาขา (Top 5)</span></div>
+          <div class="ph">
+            <span class="pt">ยอดขายตามสาขา (Top 5)</span>
+            <div style="display:flex;gap:5px">
+              <button class="rtab on" id="btm-rev" onclick="setBranchTop('rev',this)">ยอดขาย</button>
+              <button class="rtab" id="btm-target" onclick="setBranchTop('target',this)">% ต่อเป้า</button>
+            </div>
+          </div>
           <div class="pwrap" style="height:250px"><canvas id="ch-branch" role="img" aria-label="สาขา"></canvas></div>
         </div>
         <div class="panel">
@@ -564,11 +570,11 @@ details.le>summary::-webkit-details-marker{display:none}
 
     <!-- ═══ UPLOAD ═══ -->
     <div id="v-upload" class="view">
-      <div class="alert al-info"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="alert al-info" id="sales-upload-help"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <div>อัปโหลดไฟล์ Excel รายวัน (dailyReport_YYYY-MM-DD.xlsx) · ระบบอ่าน <strong>สถานะใบงาน / ราคารวม / บริการ / เวลาเริ่มงาน / เวลาเสร็จงาน</strong> อัตโนมัติ<br>
         เฉพาะรายการ <strong>เสร็จงาน</strong> เท่านั้น · จัดกลุ่มเป็น ซื้อบัตร / ใช้บัตร / ฟรีบริการ / รายการล้างรถ / อื่นๆ</div>
       </div>
-      <div class="panel" style="margin-bottom:11px">
+      <div class="panel" id="sales-upload-panel" style="margin-bottom:11px">
         <div class="ph"><span class="pt">อัปโหลดไฟล์ Excel</span></div>
         <div class="dz" id="dz" onclick="document.getElementById('finp').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
@@ -584,6 +590,25 @@ details.le>summary::-webkit-details-marker{display:none}
           </label>
           <span id="finp-name" style="font-size:12px;color:var(--tx3)">ยังไม่ได้เลือกไฟล์</span>
         </div>
+      </div>
+      <div class="panel" id="cost-upload-panel" style="display:none;margin-bottom:11px">
+        <div class="ph"><span class="pt">อัปโหลดต้นทุน</span><span class="pbadge">เงินเดือน / ค่าคอม / ต้นทุนขาย</span></div>
+        <div class="alert al-info" style="margin-bottom:10px">
+          <div>เลือกเดือนในตัวกรองก่อนอัปโหลด · รองรับทั้งฟอร์มต้นทุนปกติ และฟอร์มเงินเดือนแบบจับคู่คอลัมน์ <strong>รหัส / จำนวน</strong></div>
+        </div>
+        <div class="dz" id="cost-dz" onclick="document.getElementById('cost-finp').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleCostDrop(event)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <h3>อัปโหลดไฟล์ต้นทุน Excel</h3>
+          <p>ต้นทุนปกติ: สาขา / เงินเดือน / ค่าคอม / ต้นทุนขาย · ฟอร์มเงินเดือน: รหัส / จำนวน</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit">
+            เลือกไฟล์ต้นทุน
+            <input type="file" id="cost-finp" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="handleCostFile(this.files[0])" style="display:none">
+          </label>
+          <span id="cost-finp-name" style="font-size:12px;color:var(--tx3)">ยังไม่ได้เลือกไฟล์</span>
+        </div>
+        <div id="cost-upload-msg" class="alert al-info" style="display:none;margin-top:10px;margin-bottom:0"></div>
       </div>
       <div class="panel" id="online-sale-panel" style="margin-bottom:11px">
         <div class="ph"><span class="pt">กรอกยอดขายออนไลน์</span><span class="pbadge">ออนไลน์</span></div>
@@ -610,7 +635,7 @@ details.le>summary::-webkit-details-marker{display:none}
           <span id="imp-stat" style="font-size:12px;color:var(--tx3)"></span>
         </div>
       </div>
-      <div class="panel"><div class="ph"><span class="pt">ประวัติการอัปโหลด</span><div id="uplog-meta" style="font-size:11px;color:var(--tx3)"></div></div><div id="uplog"><div style="color:var(--tx3);font-size:12px;text-align:center;padding:18px">ยังไม่มีประวัติ</div></div><div id="uplog-pager" style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="prevUpLogPage()">ก่อนหน้า</button><button class="btn btn-ghost btn-xs" onclick="nextUpLogPage()">ถัดไป</button></div></div>
+      <div class="panel" id="sales-upload-history"><div class="ph"><span class="pt">ประวัติการอัปโหลด</span><div id="uplog-meta" style="font-size:11px;color:var(--tx3)"></div></div><div id="uplog"><div style="color:var(--tx3);font-size:12px;text-align:center;padding:18px">ยังไม่มีประวัติ</div></div><div id="uplog-pager" style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="prevUpLogPage()">ก่อนหน้า</button><button class="btn btn-ghost btn-xs" onclick="nextUpLogPage()">ถัดไป</button></div></div>
     </div>
 
     <!-- ═══ USERS ═══ -->
@@ -641,6 +666,7 @@ details.le>summary::-webkit-details-marker{display:none}
         <option value="admin">Admin</option>
         <option value="supervisor">Supervisor (ผู้ดูแล)</option>
         <option value="branch">Branch (สาขา)</option>
+        <option value="cost_uploader">HR/โกดัง (อัปโหลดต้นทุน)</option>
         <option value="readonly">Read-only</option>
       </select></div>
     <div id="m-sup-row" class="fg" style="display:none"><label>ผู้ดูแล</label><select id="msup"></select></div>
@@ -889,7 +915,7 @@ let PENDING=null;
 // ── PERMISSIONS ──
 const PERMS=['overview','daily','branches','upload','users'];
 const PLBL={overview:'ภาพรวม',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
-const PDEF={admin:PERMS,supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],readonly:['overview','daily']};
+const PDEF={admin:PERMS,supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],cost_uploader:['upload'],readonly:['overview','daily']};
 
 // ── USER DB ──
 // Local fallback users — always available even without Firebase
@@ -899,7 +925,7 @@ const LOCAL_USERS=[
 let USERS=[...LOCAL_USERS];
 let nextUid=2;
 let CU=null; // current user
-const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],readonly:['overview','daily']};
+const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],cost_uploader:['upload'],readonly:['overview','daily']};
 function normalizeUser(u){
   if(!u) return u;
   const role=u.role||'readonly';
@@ -907,9 +933,15 @@ function normalizeUser(u){
   const scope=role==='branch'?canonBrId(u.scope):u.scope;
   return {...u,scope,perms:[...new Set(base)]};
 }
-function canUpload(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='branch');}
+function canUploadSales(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='branch');}
+function canUploadCost(){return CU&&(CU.role==='admin'||CU.role==='cost_uploader');}
+function canUpload(){return canUploadSales();}
 function canEditBranch(){return CU&&(CU.role==='admin'||CU.role==='supervisor');}
 function canManageUsers(){return CU&&CU.role==='admin';}
+function canView(view){return !!(CU&&(CU.role==='admin'||(CU.perms||[]).includes(view)));}
+function firstAllowedView(){
+  return ['overview','daily','branches','upload','users'].find(v=>canView(v))||'overview';
+}
 
 // ── STATE ──
 let selBr=new Set(BR.map(b=>b.id));
@@ -917,6 +949,7 @@ let CY=new Date().getFullYear();
 let brandTab='all';
 let brSortKey='rev';let brSortAsc=false;
 let menuOvMode='rev';
+let branchTopMode='rev';
 let brFilteredIds=null; // null = all
 const CH={};
 let DATA_VERSION=0;
@@ -1033,12 +1066,10 @@ function initForUser(){
   }
 
   // Hide/show nav items based on perms
-  const navMap={overview:'v-overview',daily:'v-daily',branches:'v-branches',upload:'v-upload',users:'v-users'};
   document.querySelectorAll('.nav').forEach(n=>{
     const view=n.getAttribute('onclick')?.match(/go\('(\w+)'/)?.[1];
-    if(view&&view!=='overview'){
-      const roleAllowsUpload=(view==='upload' && ['admin','supervisor','branch'].includes(CU.role));
-      const hasPerm=(CU.perms||[]).includes(view)||CU.role==='admin'||roleAllowsUpload;
+    if(view){
+      const hasPerm=canView(view);
       n.style.display=hasPerm?'':'none';
     }
   });
@@ -1046,7 +1077,7 @@ function initForUser(){
   renderBranchAdminControls();
 
   // Hide sidebar filters based on role
-  const lockFilters=CU.role==='branch';
+  const lockFilters=CU.role==='branch'||CU.role==='cost_uploader';
   document.getElementById('sf-brand').style.display=lockFilters?'none':'';
   document.getElementById('sf-region').style.display=lockFilters?'none':'';
   document.getElementById('sf-branch').style.display=lockFilters?'none':'';
@@ -1087,7 +1118,14 @@ function initForUser(){
   buildBcList();
   mobInitNav();
   renderOnlineBranchOptions();
-  scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light'); // แสดงกราฟเปล่าก่อน
+  applyUploadRoleVisibility();
+  const startView=firstAllowedView();
+  if(startView!=='overview'){
+    const startNav=Array.from(document.querySelectorAll('.nav')).find(n=>n.getAttribute('onclick')?.includes(`go('${startView}'`));
+    go(startView,startNav||document.querySelector('.nav'));
+  }else{
+    scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light'); // แสดงกราฟเปล่าก่อน
+  }
   loadAllData(); // โหลดข้อมูลจาก Firebase แล้ว refresh อีกรอบ
   if(CU.role==='admin') renderUsers();
 }
@@ -1227,17 +1265,51 @@ function getCostPeriodLabel(){
   const m=Math.max(1,Math.min(12,parseInt(mEl.value)||1));
   return `${mN[m-1]} ${yEl.value}`;
 }
+function getSelectedMonthPeriod(){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  const fromDate=mode==='day'
+    ? document.getElementById('dp-date')?.value
+    : mode==='week'
+      ? document.getElementById('dp-from')?.value
+      : '';
+  if(fromDate){
+    const dt=new Date(fromDate);
+    if(!Number.isNaN(dt.getTime())){
+      return {
+        year:dt.getFullYear(),
+        month:dt.getMonth()+1,
+        key:`${dt.getFullYear()}_${String(dt.getMonth()+1).padStart(2,'0')}`
+      };
+    }
+  }
+  const mEl=document.getElementById('dp-m');
+  const yEl=document.getElementById('dp-y');
+  const month=Math.max(1,Math.min(12,parseInt(mEl?.value)||new Date().getMonth()+1));
+  const year=parseInt(yEl?.value)||new Date().getFullYear();
+  return {year,month,key:`${year}_${String(month).padStart(2,'0')}`};
+}
 function getCostPeriodSpec(){
   const mode=document.getElementById('fPeriod')?.value||'month';
   if(mode==='year'){
     const raw=document.getElementById('dp-yr')?.value||String(CY);
     return raw==='all'?{mode:'all'}:{mode:'year',year:parseInt(raw)||getLatestYear()};
   }
-  const mEl=document.getElementById('dp-m');
-  const yEl=document.getElementById('dp-y');
-  const month=Math.max(1,Math.min(12,parseInt(mEl?.value)||new Date().getMonth()+1));
-  const year=parseInt(yEl?.value)||new Date().getFullYear();
-  return {mode:'month',year,month,key:`${year}_${String(month).padStart(2,'0')}`};
+  return {mode:'month',...getSelectedMonthPeriod()};
+}
+function getCostPeriodRatio(){
+  const spec=getCostPeriodSpec();
+  const uiMode=document.getElementById('fPeriod')?.value||'month';
+  if(spec.mode!=='month'||uiMode==='month'||!periodDays.length) return 1;
+  const daysInMonth=new Date(spec.year,spec.month,0).getDate();
+  const selectedDays=[...new Set(periodDays)]
+    .filter(d=>d>=1&&d<=daysInMonth).length;
+  return selectedDays>0?Math.min(1,selectedDays/daysInMonth):1;
+}
+function getRentFormulaRatio(){
+  const spec=getCostPeriodSpec();
+  if(spec.mode==='year') return 12;
+  if(spec.mode==='all') return Math.max(1,getKnownYears().length*12);
+  return getCostPeriodRatio();
 }
 
 function getPeriodRevenue(id){
@@ -1306,32 +1378,34 @@ function getPeriodRentBase(id){
   PERIOD_CACHE.rent.set(cKey,out);
   return out;
 }
-function calcBranchRent(id,revBase=getPeriodRentBase(id)){
+function calcBranchRent(id,revBase=getPeriodRentBase(id),ratio=getRentFormulaRatio()){
   const rule=RENT_RULE[id]||{type:'manual',min:0,fixed:0,rate:28};
-  if(rule.type==='fixed') return +rule.fixed||0;
+  if(rule.type==='fixed') return Math.round((+rule.fixed||0)*ratio);
   if(rule.type==='minimum'){
-    const base=Math.max(+revBase||0,+rule.min||0);
+    const min=(+rule.min||0)*ratio;
+    const base=Math.max(+revBase||0,min);
     return Math.round(base*((+rule.rate||28)/100));
   }
   return COST[id]?.rent||0;
 }
-function getRentBasisLabel(id,revBase=getPeriodRentBase(id)){
+function getRentBasisLabel(id,revBase=getPeriodRentBase(id),ratio=getRentFormulaRatio()){
   const rule=RENT_RULE[id]||{type:'manual',min:0,fixed:0,rate:28};
   if(rule.type==='minimum'){
-    const min=+rule.min||0;
+    const min=(+rule.min||0)*ratio;
     const base=+revBase||0;
     return base<=min?`คิดจากมิน ${fmt(min)}`:`คิดจากยอดจริง ${fmt(base)}`;
   }
-  if(rule.type==='fixed') return `ฟิกซ์ ${fmt(+rule.fixed||0)}`;
+  if(rule.type==='fixed') return `ฟิกซ์ ${fmt((+rule.fixed||0)*ratio)}`;
   return `กรอกเอง`;
 }
-function syncFormulaRentForBranch(id){
+function syncFormulaRentForBranch(id,ratio=getRentFormulaRatio()){
   if(!COST[id]) return;
   const rule=RENT_RULE[id]||{type:'manual'};
-  if(rule.type!=='manual') COST[id].rent=calcBranchRent(id);
+  if(rule.type!=='manual') COST[id].rent=calcBranchRent(id,getPeriodRentBase(id),ratio);
 }
 function syncFormulaRents(branches=BR){
-  branches.forEach(b=>syncFormulaRentForBranch(b.id));
+  const ratio=getRentFormulaRatio();
+  branches.forEach(b=>syncFormulaRentForBranch(b.id,ratio));
 }
 
 // Count cars (เสร็จงาน) for the selected period from UPLOG
@@ -1435,6 +1509,32 @@ function scheduleRefresh(scope='all'){
     refresh(sc);
   });
 }
+function workDurationCard(label,stats,color,desc,note=''){
+  const count=+stats.count||0;
+  const minutes=+stats.minutes||0;
+  const avg=count?minutes/count:null;
+  const countText=note||`${fN(count)} งาน · รวม ${count?fN(minutes)+' นาที':'—'}`;
+  return `
+    <div class="ckpi" onclick="showWorkDurationInfo()" title="คลิกดูรายละเอียด" style="cursor:pointer;border-color:${color};box-shadow:inset 0 2px 0 ${color}">
+      <div class="ck-lbl">${label}</div>
+      <div class="ck-val" style="font-size:22px">${fmtDuration(avg)}</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:5px">${desc}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:3px">${countText}</div>
+    </div>`;
+}
+function renderWorkDurationBox(workStats,totalCars=workStats.count){
+  const el=document.getElementById('work-ov-kpi');
+  if(!el) return;
+  const doneCars=+totalCars||0;
+  const timedJobs=+workStats.count||0;
+  const missingTime=Math.max(0,doneCars-timedJobs);
+  const totalNote=`${fN(timedJobs)} งานมีเวลา / ${fN(doneCars)} รถเสร็จงาน${missingTime?` · ขาดเวลา ${fN(missingTime)}`:''}`;
+  el.innerHTML=`
+    ${workDurationCard('ทั่วไป',workStats.general,'#3b82f6','ไม่มีคำว่า ล้างรถ')}
+    ${workDurationCard('ล้างรถ',workStats.wash,'#14b8a6','บริการมีคำว่า ล้างรถ')}
+    ${workDurationCard('เฉลี่ยรวม',{minutes:workStats.minutes,count:workStats.count},'#a855f7','รวมทุกบริการที่อ่านเวลาได้',totalNote)}
+  `;
+}
 function refresh(scope='all'){
   const sel=getSel();
   syncFormulaRents(sel);
@@ -1445,7 +1545,7 @@ function refresh(scope='all'){
   const tNew=customerCounts.new;
   const avgPerCar=tCars>0?tRev/tCars:null;
   const workStats=getPeriodWorkStats(sel);
-  const avgWork=workStats.count?workStats.minutes/workStats.count:null;
+  renderWorkDurationBox(workStats,tCars);
   // cost
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const costPct=calcCostPct(tRev,tCost);
@@ -1462,7 +1562,6 @@ function refresh(scope='all'){
   document.getElementById('kpi-main').innerHTML=`
     <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
-    <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
     <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
     <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
 
@@ -1473,7 +1572,6 @@ function refresh(scope='all'){
   // cost overview panel
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
-  renderForecast(tRev);
   if(scope==='all' || scope==='overview'){
     drawDailyChart();
     drawBranchChart();
@@ -1555,58 +1653,33 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
   } else { barEl.style.display='none'; }
 }
 
-// ── FORECAST ──
-function renderForecast(tRev){
-  const el=document.getElementById('fc-body');
-  const badge=document.getElementById('fc-badge');
-  if(!el) return;
-  const today=new Date();
-  const daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
-  const daysPassed=today.getDate();
-  const sel=getSel();
-  const activeDays=getPeriodDays().filter(d=>sel.some(b=>getDR(d,b.id)>0));
-  const daysWithData=activeDays.length||daysPassed;
-  if(tRev<=0){
-    if(badge){badge.textContent='ยังไม่มีข้อมูล';badge.style.background='';badge.style.color='';}
-    el.innerHTML='<div style="color:var(--tx3);font-size:12px;text-align:center;padding:10px">ยังไม่มียอดขายในช่วงเวลานี้</div>';
-    return;
-  }
-  const avgPerDay=tRev/daysWithData;
-  const remainDays=Math.max(0,daysInMonth-daysPassed);
-  const projected=tRev+(avgPerDay*remainDays);
-  const totalTarget=sel.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
-  const projPct=totalTarget>0?(projected/totalTarget*100).toFixed(1):null;
-  const projColor=projPct===null?'var(--accent)':projPct>=100?'var(--green)':projPct>=80?'var(--amber)':'var(--red)';
-  if(badge){badge.textContent=`เฉลี่ย ${fmt(Math.round(avgPerDay))}/วัน`;badge.style.background='rgba(59,130,246,.13)';badge.style.color='#93c5fd';}
-  el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px">
-      <div style="background:var(--c0);border-radius:8px;padding:10px 12px">
-        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">ยอดปัจจุบัน</div>
-        <div style="font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace">${fmt(Math.round(tRev))}</div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:3px">จาก ${daysWithData} วันที่มีข้อมูล</div>
-      </div>
-      <div style="background:var(--c0);border-radius:8px;padding:10px 12px">
-        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">คาดสิ้นเดือน</div>
-        <div style="font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${projColor}">${fmt(Math.round(projected))}</div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:3px">อีก ${remainDays} วัน × ${fmt(Math.round(avgPerDay))}</div>
-      </div>
-      <div style="background:var(--c0);border-radius:8px;padding:10px 12px">
-        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">% เป้าที่คาด</div>
-        <div style="font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${projColor}">${projPct!==null?projPct+'%':'—'}</div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:3px">${totalTarget>0?'เป้า '+fmt(totalTarget):'ยังไม่ได้ตั้งเป้า'}</div>
-      </div>
-    </div>
-    <div style="background:var(--c0);border-radius:6px;height:8px;overflow:hidden;margin-bottom:5px">
-      <div style="height:100%;width:${Math.min(tRev/Math.max(projected,1)*100,100).toFixed(1)}%;background:var(--accent);border-radius:6px;transition:width .6s"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--tx3)">
-      <span>ยอดปัจจุบัน</span>
-      <span style="color:${projColor}">คาดสิ้นเดือน${projPct!==null?' ('+projPct+'% ของเป้า)':''}</span>
-    </div>`;
-}
-
 // ── TARGET ──
 // renderTarget auto-pulls from branchTargets — called from refresh() and refreshOverviewOnly()
+function getForecastStats(tRev,sel,totalTarget){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  const today=new Date();
+  const spec=getSelectedMonthPeriod();
+  const daysInMonth=new Date(spec.year,spec.month,0).getDate();
+  const isCurrentMonth=spec.year===today.getFullYear()&&spec.month===(today.getMonth()+1);
+  const activeDays=getPeriodDays()
+    .filter(d=>d>=1&&d<=daysInMonth)
+    .filter(d=>sel.some(b=>getDR(d,b.id)>0));
+  const lastDataDay=activeDays.length?Math.max(...activeDays):0;
+  const daysPassed=isCurrentMonth?Math.min(today.getDate(),daysInMonth):(lastDataDay||daysInMonth);
+  const daysWithData=activeDays.length||Math.max(1,daysPassed);
+  const remainDays=(mode==='month'&&isCurrentMonth)?Math.max(0,daysInMonth-daysPassed):0;
+  if(mode==='year'){
+    return {hasData:false,notMonthly:true,daysInMonth,daysPassed,daysWithData,remainDays,avgPerDay:0,projected:0,projectedPct:null};
+  }
+  if(tRev<=0){
+    return {hasData:false,daysInMonth,daysPassed,daysWithData,remainDays,avgPerDay:0,projected:0,projectedPct:null};
+  }
+  const avgPerDay=tRev/daysWithData;
+  const projected=tRev+(avgPerDay*remainDays);
+  const projectedPct=totalTarget>0?projected/totalTarget*100:null;
+  return {hasData:true,daysInMonth,daysPassed,daysWithData,remainDays,avgPerDay,projected,projectedPct};
+}
+
 function renderTarget(tRev,tOrd,tNew){
   // Auto-pull: sum targets of currently selected branches
   const sel=getSel();
@@ -1620,6 +1693,24 @@ function renderTarget(tRev,tOrd,tNew){
   const barPct=Math.min(pct,100).toFixed(1);
   const bc=pct>=100?'#22c55e':pct>=80?'#f59e0b':'#3b82f6';
   const remain=raw-tRev;
+  const forecast=getForecastStats(tRev,sel,raw);
+  const forecastPct=forecast.projectedPct;
+  const forecastColor=forecastPct===null?'var(--accent)':forecastPct>=100?'var(--green)':forecastPct>=80?'var(--amber)':'var(--red)';
+  const forecastEmptyText=forecast.notMonthly?'เลือกมุมมองรายเดือนเพื่อดูคาดการณ์สิ้นเดือน':'ยังไม่มียอดขายในช่วงนี้ จึงยังคาดการณ์สิ้นเดือนไม่ได้';
+  const forecastCardHtml=forecast.hasData?`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-bottom:12px">
+      <div class="ckpi">
+        <div class="ck-lbl">คาดสิ้นเดือน</div>
+        <div class="ck-val" style="color:${forecastColor}">${fmt(Math.round(forecast.projected))}</div>
+        <div style="font-size:10.5px;color:var(--tx3);margin-top:3px">เฉลี่ย ${fmt(Math.round(forecast.avgPerDay))}/วัน</div>
+      </div>
+      <div class="ckpi">
+        <div class="ck-lbl">เป้าที่คาด</div>
+        <div class="ck-val" style="color:${forecastColor}">${forecastPct!==null?forecastPct.toFixed(1)+'%':'-'}</div>
+        <div style="font-size:10.5px;color:var(--tx3);margin-top:3px">คาด ${fmt(Math.round(forecast.projected))}</div>
+      </div>
+    </div>`:
+    `<div style="background:var(--c0);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;color:var(--tx3);font-size:12px">${forecastEmptyText}</div>`;
 
   // Supervisor group breakdown
   const supGroups=SUPS.map(sup=>{
@@ -1638,10 +1729,15 @@ function renderTarget(tRev,tOrd,tNew){
   el.innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:12px">
       ${tc('ยอดขาย',tRev,raw,true,"showRevenueBreakdown('all')")}
+      <div class="kpi" style="padding:10px 12px">
+        <div class="kl">% ต่อเป้า</div>
+        <div class="kv" style="font-size:16px;color:${bc}">${pct.toFixed(1)}%</div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:2px">เป้า: ${fmt(raw)}</div>
+        <div class="ks ${pct>=100?'up':pct>=80?'neu':'dn'}">${remain>0?'เหลือ '+fmt(remain):'บรรลุเป้าแล้ว'}</div>
+      </div>
       ${tc('เฉลี่ย/สาขา',tRev/(sel.length||1),raw/(sel.length||1),true)}
-      ${tc('จำนวนงาน',tOrd,Math.round(raw/720),false)}
-      ${tc('ลูกค้าใหม่',tNew,Math.round(raw/4200),false)}
     </div>
+    ${forecastCardHtml}
     <div style="font-size:11px;color:var(--tx3);margin-bottom:5px">ความคืบหน้ารวม — ${barPct}% (เป้า ${fmt(raw)})</div>
     <div style="background:var(--c0);border-radius:6px;height:10px;overflow:hidden;margin-bottom:5px">
       <div style="height:100%;width:${barPct}%;background:${bc};border-radius:6px;transition:width .6s"></div></div>
@@ -1767,31 +1863,44 @@ function showWorkDurationInfo(){
   const sel=getSel();
   const totalStats=getPeriodWorkStats(sel);
   const totalOrders=sel.reduce((s,b)=>s+getPeriodOrd(b.id),0);
+  const missingTime=Math.max(0,totalOrders-totalStats.count);
   const rows=sel.map(b=>{
     const st=getPeriodWorkStats([b]);
     const ord=getPeriodOrd(b.id);
-    return {b,minutes:st.minutes,count:st.count,ord,avg:st.count?st.minutes/st.count:null};
+    const missing=Math.max(0,ord-st.count);
+    return {
+      b,minutes:st.minutes,count:st.count,ord,missing,
+      avg:st.count?st.minutes/st.count:null,
+      generalAvg:st.general.count?st.general.minutes/st.general.count:null,
+      washAvg:st.wash.count?st.wash.minutes/st.wash.count:null,
+      generalCount:st.general.count,
+      washCount:st.wash.count
+    };
   }).filter(r=>r.count>0||r.ord>0).sort((a,b)=>b.count-a.count||b.ord-a.ord);
   const rowHtml=rows.length?rows.map(r=>`
     <div style="display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid rgba(31,48,85,.45)">
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:500">${escHtml(r.b.name)} <span class="mono" style="color:var(--tx3);font-size:10px">${escHtml(r.b.id)}</span></div>
-        <div style="font-size:10.5px;color:var(--tx3)">รถเสร็จงาน ${fN(r.ord)} · อ่านเวลา D→F ได้ ${fN(r.count)}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">รถเสร็จงาน ${fN(r.ord)} · อ่านเวลา D→F ได้ ${fN(r.count)}${r.missing?` · ขาดเวลา ${fN(r.missing)}`:''}</div>
       </div>
       <div style="text-align:right">
-        <div class="mono" style="font-size:12px;font-weight:600">${r.avg!==null?fmtDuration(r.avg):'—'}</div>
-        <div style="font-size:10.5px;color:var(--tx3)">เฉลี่ย</div>
+        <div class="mono" style="font-size:11.5px;font-weight:600">ทั่วไป ${fmtDuration(r.generalAvg)}</div>
+        <div class="mono" style="font-size:11.5px;font-weight:600">ล้างรถ ${fmtDuration(r.washAvg)}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">รวม ${r.avg!==null?fmtDuration(r.avg):'—'}</div>
       </div>
     </div>`).join(''):'<div style="color:var(--tx3);font-size:12px;padding:10px 0">ยังไม่มีข้อมูลเวลาในช่วงนี้</div>';
   openDetailModal('ที่มาระยะเวลาทำงาน',`
     <div class="alert al-info" style="margin-bottom:12px">
-      <div>ระยะเวลาทำงานเฉลี่ยคิดเฉพาะรถที่ <strong>สถานะใบงาน = เสร็จงาน</strong> โดยใช้ <strong>คอลัมน์ D เวลาเริ่มงาน</strong> ถึง <strong>คอลัมน์ F เวลาเสร็จงาน</strong> จากไฟล์ Excel ในช่วง filter ปัจจุบัน จำนวนรถเสร็จงานคือยอดใบงานเสร็จงานเดียวกัน</div>
+      <div>ระยะเวลาทำงานเฉลี่ยคิดเฉพาะรถที่ <strong>สถานะใบงาน = เสร็จงาน</strong> โดยใช้ <strong>คอลัมน์ D เวลาเริ่มงาน</strong> ถึง <strong>คอลัมน์ F เวลาเสร็จงาน</strong> แล้วแยกเป็น <strong>ทั่วไป = ไม่มีคำว่า “ล้างรถ”</strong> และ <strong>ล้างรถ = บริการมีคำว่า “ล้างรถ”</strong></div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">
-      <div class="ckpi"><div class="ck-lbl">เวลาเฉลี่ย</div><div class="ck-val">${totalStats.count?fmtDuration(totalStats.minutes/totalStats.count):'—'}</div></div>
+      <div class="ckpi"><div class="ck-lbl">ทั่วไปเฉลี่ย</div><div class="ck-val">${totalStats.general.count?fmtDuration(totalStats.general.minutes/totalStats.general.count):'—'}</div><div style="font-size:10px;color:var(--tx3);margin-top:3px">${fN(totalStats.general.count)} งาน</div></div>
+      <div class="ckpi"><div class="ck-lbl">ล้างรถเฉลี่ย</div><div class="ck-val">${totalStats.wash.count?fmtDuration(totalStats.wash.minutes/totalStats.wash.count):'—'}</div><div style="font-size:10px;color:var(--tx3);margin-top:3px">${fN(totalStats.wash.count)} งาน</div></div>
+      <div class="ckpi"><div class="ck-lbl">เวลาเฉลี่ยรวม</div><div class="ck-val">${totalStats.count?fmtDuration(totalStats.minutes/totalStats.count):'—'}</div></div>
       <div class="ckpi"><div class="ck-lbl">เวลารวม</div><div class="ck-val">${totalStats.count?fN(totalStats.minutes)+' นาที':'—'}</div></div>
       <div class="ckpi"><div class="ck-lbl">อ่านเวลา D→F ได้</div><div class="ck-val">${fN(totalStats.count)}</div></div>
       <div class="ckpi"><div class="ck-lbl">รถเสร็จงาน</div><div class="ck-val">${fN(totalOrders)}</div></div>
+      <div class="ckpi"><div class="ck-lbl">ขาดเวลา D/F</div><div class="ck-val">${fN(missingTime)}</div></div>
     </div>
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">แยกตามสาขา</div>
     <div style="max-height:330px;overflow:auto">${rowHtml}</div>
@@ -1873,10 +1982,25 @@ function drawDailyChart(){
   }});
 }
 
+function setBranchTop(mode,el){
+  branchTopMode=mode;
+  document.querySelectorAll('#btm-rev,#btm-target').forEach(t=>t.classList.remove('on'));
+  if(el) el.classList.add('on');
+  drawBranchChart();
+}
 function drawBranchChart(){
   dc('branch');
-  const sel=getSel().map(b=>({...b,_rev:getPeriodRevenue(b.id)})).sort((a,b)=>b._rev-a._rev).slice(0,5);
-  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sel.map(b=>b.id),datasets:[{data:sel.map(b=>b._rev),backgroundColor:sel.map(b=>BC[b.brand]),borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sel[i[0].dataIndex]?.name||'',label:i=>fmt(i.raw)}}}}});
+  const rows=getSel().map(b=>{
+    const rev=getPeriodRevenue(b.id);
+    const target=branchTargets[b.id]||0;
+    const targetPct=target>0?(rev/target*100):0;
+    return {...b,_rev:rev,_target:target,_targetPct:targetPct};
+  }).sort((a,b)=>branchTopMode==='target'
+    ? (b._targetPct-a._targetPct)||(b._rev-a._rev)
+    : b._rev-a._rev
+  ).slice(0,5);
+  const values=branchTopMode==='target'?rows.map(b=>+b._targetPct.toFixed(1)):rows.map(b=>b._rev);
+  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:rows.map(b=>b.id),datasets:[{data:values,backgroundColor:rows.map(b=>BC[b.brand]),borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>branchTopMode==='target'?v+'%':'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>rows[i[0].dataIndex]?.name||'',label:i=>{const b=rows[i.dataIndex];return branchTopMode==='target'?`${i.raw}% ต่อเป้า (${fmt(b._rev)} / ${fmt(b._target)})`:fmt(i.raw);}}}}}});
 }
 
 function drawBrandChart(){
@@ -1915,7 +2039,7 @@ function drawSupChart(){
   CH['sup']=new Chart(document.getElementById('ch-sup'),{type:'bar',data:{labels:sups.map(s=>s[0]),datasets:[{data:sups.map(s=>s[1]),backgroundColor:sups.map(s=>SUP_COL[s[0]]||'#888'),borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:15,font:{size:9}}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000000).toFixed(1)+'M'}}},plugins:{legend:{display:false}}}});
 }
 
-function setMenuOv(mode,el){menuOvMode=mode;document.querySelectorAll('#v-overview .rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');drawMenuOv();}
+function setMenuOv(mode,el){menuOvMode=mode;document.querySelectorAll('#mmo-rev,#mmo-ord').forEach(t=>t.classList.remove('on'));el.classList.add('on');drawMenuOv();}
 function drawMenuOv(){
   dc('menu-ov');
   const yrs=getKnownYears();
@@ -2117,7 +2241,7 @@ function refreshOverviewOnly(){
   const tNew=customerCounts.new;
   const avgPerCar=tCars>0?tRev/tCars:null;
   const workStats=getPeriodWorkStats(sel);
-  const avgWork=workStats.count?workStats.minutes/workStats.count:null;
+  renderWorkDurationBox(workStats,tCars);
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const costPct=calcCostPct(tRev,tCost);
   const costKpiClass=costKpiClassFor(tRev,tCost,costPct);
@@ -2130,12 +2254,10 @@ function refreshOverviewOnly(){
   if(kpiEl) kpiEl.innerHTML=`
     <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
-    <div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูที่มาของตัวเลขเวลา" style="cursor:pointer"><div class="kl">ระยะเวลาทำงานเฉลี่ย</div><div class="kv">${avgWork!==null?fmtDuration(avgWork):'—'}</div><div class="ks neu">รถเสร็จงาน ${fN(tOrd)} คัน · ใช้ D→F</div></div>
     <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
     <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
-  renderForecast(tRev);
 }
 
 // ── BRANCH TABLE ──
@@ -2539,6 +2661,24 @@ function getWorkDurationMinutes(r){
   if(diff<0) diff+=1440;
   return diff>=0?diff:null;
 }
+function isWashServiceText(svc){
+  return String(svc||'').toLowerCase().includes('ล้างรถ');
+}
+function emptyWorkStats(){
+  return {
+    minutes:0,count:0,
+    general:{minutes:0,count:0},
+    wash:{minutes:0,count:0}
+  };
+}
+function addWorkDuration(stats,mins,isWash){
+  if(mins===null||mins===undefined||!Number.isFinite(mins)) return;
+  stats.minutes+=mins;
+  stats.count++;
+  const bucket=isWash?stats.wash:stats.general;
+  bucket.minutes+=mins;
+  bucket.count++;
+}
 function fmtDuration(mins){
   if(mins===null||mins===undefined||!Number.isFinite(mins)) return '—';
   return `${Math.round(mins)} นาที`;
@@ -2580,14 +2720,28 @@ function getPeriodWorkStats(sel){
         if(!inPeriod(dateKey)) return;
         acc.minutes+=(+d.minutes||0);
         acc.count+=(+d.count||0);
+        if(d.general){
+          acc.general.minutes+=(+d.general.minutes||0);
+          acc.general.count+=(+d.general.count||0);
+        }
+        if(d.wash){
+          acc.wash.minutes+=(+d.wash.minutes||0);
+          acc.wash.count+=(+d.wash.count||0);
+        }
       });
     }else if(l.workMinutes&&l.workCount){
       const yOk=CY==='all'||!l.year||l.year===CY;
       const mOk=mode==='year'||!l.date||String(l.date).slice(5,7)===mm;
-      if(yOk&&mOk){acc.minutes+=(+l.workMinutes||0);acc.count+=(+l.workCount||0);}
+      if(yOk&&mOk){
+        acc.minutes+=(+l.workMinutes||0);acc.count+=(+l.workCount||0);
+        acc.general.minutes+=(+l.workGeneralMinutes||0);
+        acc.general.count+=(+l.workGeneralCount||0);
+        acc.wash.minutes+=(+l.workWashMinutes||0);
+        acc.wash.count+=(+l.workWashCount||0);
+      }
     }
     return acc;
-  },{minutes:0,count:0});
+  },emptyWorkStats());
   PERIOD_CACHE.work.set(cKey,out);
   return out;
 }
@@ -2645,10 +2799,16 @@ function showPreview(rows,fname,sheetName,detectedBrId){
   document.getElementById('prev-badge').textContent=`Sheet: ${sheetName} → สาขา: ${brName}`;
   const completed=rows.filter(isCompletedRow);
   const cancelled=rows.filter(isCancelledRow);
-  const workDurations=completed.map(getWorkDurationMinutes).filter(v=>v!==null);
-  const totalWorkMinutes=workDurations.reduce((s,v)=>s+v,0);
-  const avgWork=workDurations.length?totalWorkMinutes/workDurations.length:null;
-  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${avgWork!==null?' · เวลาเฉลี่ย '+fmtDuration(avgWork)+' · รวม '+fN(totalWorkMinutes)+' นาที (D→F '+fN(workDurations.length)+'/'+fN(completed.length)+')':''}`;
+  const previewWork=emptyWorkStats();
+  completed.forEach(r=>{
+    const dur=getWorkDurationMinutes(r);
+    if(dur===null) return;
+    addWorkDuration(previewWork,dur,isWashServiceText(getField(r,'บริการ')));
+  });
+  const avgWork=previewWork.count?previewWork.minutes/previewWork.count:null;
+  const genAvg=previewWork.general.count?previewWork.general.minutes/previewWork.general.count:null;
+  const washAvg=previewWork.wash.count?previewWork.wash.minutes/previewWork.wash.count:null;
+  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${avgWork!==null?' · เวลาเฉลี่ยรวม '+fmtDuration(avgWork)+' · ทั่วไป '+fmtDuration(genAvg)+' ('+fN(previewWork.general.count)+' งาน) · ล้างรถ '+fmtDuration(washAvg)+' ('+fN(previewWork.wash.count)+' งาน) · รวม '+fN(previewWork.minutes)+' นาที (D→F '+fN(previewWork.count)+'/'+fN(completed.length)+')':''}`;
   const tbody=document.querySelector('#tbl-prev tbody');
   tbody.innerHTML=completed.map((r,i)=>{
     const price=parseMoney(getField(r,'ราคารวม'));
@@ -2693,6 +2853,10 @@ function importData(){
   const dayOldMap={};   // key = "YYYY-MM-DD" — column AG = N
   let workMinutes=0;
   let workCount=0;
+  let workGeneralMinutes=0;
+  let workGeneralCount=0;
+  let workWashMinutes=0;
+  let workWashCount=0;
   let newCustomers=0;
   let oldCustomers=0;
   let detectedYear=null;
@@ -2737,11 +2901,18 @@ function importData(){
       }
     }
     if(dur!==null&&dateKey){
+      const isWash=isWashServiceText(svc);
       workMinutes+=dur;
       workCount++;
-      if(!dayWorkMap[dateKey]) dayWorkMap[dateKey]={minutes:0,count:0};
-      dayWorkMap[dateKey].minutes+=dur;
-      dayWorkMap[dateKey].count++;
+      if(isWash){
+        workWashMinutes+=dur;
+        workWashCount++;
+      }else{
+        workGeneralMinutes+=dur;
+        workGeneralCount++;
+      }
+      if(!dayWorkMap[dateKey]) dayWorkMap[dateKey]=emptyWorkStats();
+      addWorkDuration(dayWorkMap[dateKey],dur,isWash);
     }
   });
 
@@ -2767,7 +2938,7 @@ function importData(){
   const logDate=firstDate.slice(0,7)||`${yr}-??`; // YYYY-MM
   const ts=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
   const brName=detectedBrId?(BR.find(b=>b.id===detectedBrId)?.name||detectedBrId):'?';
-  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,dayRentBaseMap,dayWorkMap,dayNewMap,dayOldMap,workMinutes,workCount,newCustomers,oldCustomers,year:yr});
+  UPLOG.unshift({name,date:logDate,branch:brName,brId:detectedBrId,rev:totalRev,cars:totalCars,svcBreak,ts,dayRevMap,dayCarMap,dayRentBaseMap,dayWorkMap,dayNewMap,dayOldMap,workMinutes,workCount,workGeneralMinutes,workGeneralCount,workWashMinutes,workWashCount,newCustomers,oldCustomers,year:yr});
   // Store daily cars in DAILY_CARS
   if(detectedBrId){
     Object.entries(dayCarMap).forEach(([dateKey,cars])=>{
@@ -2791,7 +2962,9 @@ function importData(){
   saveUploadLog(UPLOG[0]); // บันทึกลง Firebase
   renderUpLog();
 
-  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน) · ลูกค้าใหม่ ${fN(newCustomers)} / เก่า ${fN(oldCustomers)}${workCount?' · เวลาเฉลี่ย '+fmtDuration(workMinutes/workCount)+' · รวม '+fN(workMinutes)+' นาที (D→F '+fN(workCount)+'/'+fN(totalCars)+')':''}`;
+  const genAvg=workGeneralCount?workGeneralMinutes/workGeneralCount:null;
+  const washAvg=workWashCount?workWashMinutes/workWashCount:null;
+  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน) · ลูกค้าใหม่ ${fN(newCustomers)} / เก่า ${fN(oldCustomers)}${workCount?' · เวลาเฉลี่ยรวม '+fmtDuration(workMinutes/workCount)+' · ทั่วไป '+fmtDuration(genAvg)+' ('+fN(workGeneralCount)+' งาน) · ล้างรถ '+fmtDuration(washAvg)+' ('+fN(workWashCount)+' งาน) · รวม '+fN(workMinutes)+' นาที (D→F '+fN(workCount)+'/'+fN(totalCars)+')':''}`;
   PENDING=null;
   setTimeout(()=>{
     document.getElementById('prev-wrap').style.display='none';
@@ -2811,6 +2984,18 @@ function getUploadBranchOptions(){
   if(CU.role==='branch') return BR.filter(b=>String(b.id)===String(CU.scope));
   if(CU.role==='supervisor') return BR.filter(b=>b.sup===CU.scope);
   return BR;
+}
+function applyUploadRoleVisibility(){
+  const showSales=canUploadSales();
+  const showCost=canUploadCost();
+  ['sales-upload-help','sales-upload-panel','online-sale-panel','sales-upload-history'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=showSales?'':'none';
+  });
+  const prev=document.getElementById('prev-wrap');
+  if(prev&&!showSales) prev.style.display='none';
+  const costPanel=document.getElementById('cost-upload-panel');
+  if(costPanel) costPanel.style.display=showCost?'':'none';
 }
 function renderOnlineBranchOptions(){
   const sel=document.getElementById('online-br');
@@ -2874,6 +3059,201 @@ async function saveOnlineSale(){
   if(carsEl) carsEl.value='';
   if(msg){msg.textContent=`บันทึกยอดออนไลน์แล้ว ${fmt(rev)}`;msg.style.color='var(--green)';}
   scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
+}
+
+function handleCostDrop(e){
+  e.preventDefault();
+  document.getElementById('cost-dz')?.classList.remove('drag');
+  handleCostFile(e.dataTransfer.files[0]);
+}
+function detectBranchFromText(v){
+  const text=String(v||'').trim();
+  if(!text) return null;
+  const direct=detectBranchFromSheet(text);
+  if(direct) return direct;
+  const lower=text.toLowerCase();
+  for(const b of [...BR].sort((a,b)=>String(b.id).length-String(a.id).length)){
+    if(lower.includes(String(b.id).toLowerCase())) return b.id;
+  }
+  for(const [oldId,newId] of Object.entries(BR_ID_ALIASES).sort((a,b)=>String(b[0]).length-String(a[0]).length)){
+    if(lower.includes(String(oldId).toLowerCase())) return newId;
+  }
+  const stripped=stripSpaces(text);
+  for(const b of BR){
+    const bn=stripSpaces(b.name);
+    if(stripped.includes(bn)||bn.includes(stripped)) return b.id;
+  }
+  return null;
+}
+function normHeader(v){
+  return String(v||'').toLowerCase().replace(/\s+/g,'').replace(/[()\-_/]/g,'');
+}
+function findHeaderIndex(headers,keys){
+  const normalized=keys.map(normHeader);
+  return headers.findIndex(h=>{
+    const nh=normHeader(h);
+    return normalized.some(k=>k&&nh.includes(k));
+  });
+}
+function findCostHeader(matrix,sheetBranchId){
+  const max=Math.min(matrix.length,15);
+  for(let i=0;i<max;i++){
+    const headers=matrix[i]||[];
+    const branchIdx=findHeaderIndex(headers,['สาขา','ชื่อสาขา','branch','branchcode','code']);
+    const salaryIdx=findHeaderIndex(headers,['เงินเดือน','salary','ค่าแรง']);
+    const commissionIdx=findHeaderIndex(headers,['ค่าคอม','commission','comm','คอมมิชชั่น','คอม']);
+    const cogsIdx=findHeaderIndex(headers,['ต้นทุนขาย','cogs','costofsales','costขาย','ต้นทุนสินค้า','ต้นทุนบริการ']);
+    const hasCost=salaryIdx>=0||commissionIdx>=0||cogsIdx>=0;
+    if(hasCost&&(branchIdx>=0||sheetBranchId)) return {row:i,branchIdx,salaryIdx,commissionIdx,cogsIdx};
+  }
+  return null;
+}
+function findGroupedAmountHeader(matrix){
+  const max=Math.min(matrix.length,15);
+  for(let i=0;i<max;i++){
+    const row=matrix[i]||[];
+    let pairs=0;
+    for(let c=0;c<row.length-1;c++){
+      if(normHeader(row[c])==='รหัส'&&normHeader(row[c+1])==='จำนวน') pairs++;
+    }
+    if(pairs>0) return i;
+  }
+  return -1;
+}
+function parseGroupedSalarySheet(matrix,sheetName,totals,skipped){
+  const headerRow=findGroupedAmountHeader(matrix);
+  if(headerRow<0) return false;
+  let found=0;
+  for(let r=headerRow+1;r<matrix.length;r++){
+    const row=matrix[r]||[];
+    for(let c=0;c<row.length-1;c++){
+      if(normHeader(matrix[headerRow]?.[c])!=='รหัส'||normHeader(matrix[headerRow]?.[c+1])!=='จำนวน') continue;
+      const codeText=String(row[c]||'').trim();
+      const amount=parseMoney(row[c+1]);
+      if(!codeText||!amount) continue;
+      if(/รวม|ยอดรวม|จำนวน|เงินสด|โอน/i.test(codeText)) continue;
+      const brId=detectBranchFromText(codeText);
+      if(!brId){
+        skipped.push(`${sheetName} แถว ${r+1}: ไม่พบสาขาจากรหัส "${codeText}"`);
+        continue;
+      }
+      if(!totals[brId]) totals[brId]={labor:0,service:0,rows:0,hasLabor:false,hasService:false};
+      totals[brId].labor+=amount;
+      totals[brId].rows++;
+      totals[brId].hasLabor=true;
+      found++;
+    }
+  }
+  return found>0;
+}
+function getCostUploadPeriod(){
+  const mode=document.getElementById('fPeriod')?.value||'month';
+  if(mode==='year') return null;
+  const period=getSelectedMonthPeriod();
+  return {...period,label:getCostPeriodLabel()||period.key};
+}
+function parseCostWorkbook(wb){
+  const totals={};
+  const skipped=[];
+  wb.SheetNames.forEach(sheetName=>{
+    const ws=wb.Sheets[sheetName];
+    const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    const sheetBranchId=detectBranchFromText(sheetName);
+    const header=findCostHeader(matrix,sheetBranchId);
+    if(!header){
+      if(!parseGroupedSalarySheet(matrix,sheetName,totals,skipped)){
+        skipped.push(`${sheetName}: ไม่พบหัวคอลัมน์ต้นทุน`);
+      }
+      return;
+    }
+    for(let r=header.row+1;r<matrix.length;r++){
+      const row=matrix[r]||[];
+      const brId=sheetBranchId||detectBranchFromText(row[header.branchIdx]);
+      const salary=header.salaryIdx>=0?parseMoney(row[header.salaryIdx]):0;
+      const commission=header.commissionIdx>=0?parseMoney(row[header.commissionIdx]):0;
+      const cogs=header.cogsIdx>=0?parseMoney(row[header.cogsIdx]):0;
+      const hasAmount=salary!==0||commission!==0||cogs!==0;
+      if(!hasAmount) continue;
+      if(!brId){
+        skipped.push(`${sheetName} แถว ${r+1}: ไม่พบสาขา`);
+        continue;
+      }
+      if(!totals[brId]) totals[brId]={labor:0,service:0,rows:0,hasLabor:false,hasService:false};
+      totals[brId].labor+=salary+commission;
+      totals[brId].service+=cogs;
+      totals[brId].rows++;
+      if(header.salaryIdx>=0||header.commissionIdx>=0) totals[brId].hasLabor=true;
+      if(header.cogsIdx>=0) totals[brId].hasService=true;
+    }
+  });
+  return {totals,skipped};
+}
+async function saveUploadedCostForBranch(id,period,patch,fileName){
+  if(!branchMonthlyCosts[id]) branchMonthlyCosts[id]={};
+  const current=branchMonthlyCosts[id][period.key]||{labor:0,rent:0,service:0};
+  const next={
+    labor:patch.hasLabor?Math.round(patch.labor||0):(+current.labor||0),
+    rent:+current.rent||0,
+    service:patch.hasService?Math.round(patch.service||0):(+current.service||0)
+  };
+  branchMonthlyCosts[id][period.key]=next;
+  if(db){
+    const ref=db.collection('branch_data').doc(id);
+    await ref.set({
+      updatedAt:new Date().toISOString(),
+      costUploadAt:new Date().toISOString(),
+      lastCostUpload:{fileName,period:period.key,by:CU?.username||''}
+    },{merge:true});
+    const update={};
+    if(patch.hasLabor) update[`costs.${period.key}.labor`]=next.labor;
+    if(patch.hasService) update[`costs.${period.key}.service`]=next.service;
+    if(Object.keys(update).length) await ref.update(update);
+  }
+}
+async function handleCostFile(file){
+  if(!file) return;
+  const nameEl=document.getElementById('cost-finp-name');
+  const msg=document.getElementById('cost-upload-msg');
+  if(nameEl) nameEl.textContent=file.name;
+  if(msg){msg.style.display='flex';msg.className='alert al-info';msg.textContent='กำลังอ่านไฟล์ต้นทุน...';}
+  if(!canUploadCost()){
+    if(msg){msg.className='alert al-err';msg.textContent='สิทธิ์นี้อัปโหลดต้นทุนไม่ได้';}
+    return;
+  }
+  const period=getCostUploadPeriod();
+  if(!period){
+    if(msg){msg.className='alert al-warn';msg.textContent='กรุณาเลือกช่วงเวลาเป็นรายเดือน/รายวัน/ช่วงวันที่ เพื่อระบุเดือนของต้นทุนก่อนอัปโหลด';}
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const {totals,skipped}=parseCostWorkbook(wb);
+      const entries=Object.entries(totals);
+      if(!entries.length){
+        if(msg){msg.className='alert al-warn';msg.textContent='ไม่พบข้อมูลต้นทุนที่อ่านได้ ตรวจหัวคอลัมน์ สาขา / เงินเดือน / ค่าคอม / ต้นทุนขาย';}
+        return;
+      }
+      for(const [id,patch] of entries){
+        await saveUploadedCostForBranch(id,period,patch,file.name);
+      }
+      loadCostForPeriod();
+      if(document.getElementById('v-branches')?.classList.contains('on')) renderBranchTable();
+      if(CU?.role!=='cost_uploader') refreshOverviewOnly();
+      const totalLabor=entries.reduce((s,[,v])=>s+(v.hasLabor?v.labor:0),0);
+      const totalService=entries.reduce((s,[,v])=>s+(v.hasService?v.service:0),0);
+      if(msg){
+        msg.className='alert al-ok';
+        msg.textContent=`บันทึกต้นทุน ${fN(entries.length)} สาขา (${period.label}) · ค่าแรง/เงินเดือน+คอม ${fmt(totalLabor)} · ต้นทุนขาย ${fmt(totalService)}${skipped.length?' · ข้าม '+fN(skipped.length)+' แถว/ชีต':''}`;
+      }
+      const input=document.getElementById('cost-finp');
+      if(input) input.value='';
+    }catch(err){
+      if(msg){msg.className='alert al-err';msg.textContent='อ่านไฟล์ต้นทุนไม่ได้: '+err.message;}
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 let upLogPage=1; const UPLOG_PAGE_SIZE=20;
@@ -2952,7 +3332,7 @@ function renderUpLog(){
                   <span style="font-size:12.5px;font-weight:500;word-break:break-word">${escHtml(l.name)}</span>
                   <span class="pbadge" style="font-size:9.5px">${logSourceText(l)}</span>
                 </div>
-                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${escHtml(l.branch)} · ${fN(l.cars||0)} คัน · ${fmt(l.rev||0)}${l.workCount?' · เวลาเฉลี่ย '+fmtDuration(l.workMinutes/l.workCount)+' · รวม '+fN(l.workMinutes)+' นาที (D→F '+fN(l.workCount)+'/'+fN(l.cars||0)+')':''}</div>
+                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${escHtml(l.branch)} · ${fN(l.cars||0)} คัน · ${fmt(l.rev||0)}${l.workCount?' · เวลาเฉลี่ยรวม '+fmtDuration(l.workMinutes/l.workCount)+' · ทั่วไป '+fmtDuration(l.workGeneralCount?l.workGeneralMinutes/l.workGeneralCount:null)+' · ล้างรถ '+fmtDuration(l.workWashCount?l.workWashMinutes/l.workWashCount:null)+' · รวม '+fN(l.workMinutes)+' นาที (D→F '+fN(l.workCount)+'/'+fN(l.cars||0)+')':''}</div>
               </div>
               <div class="lt" style="padding-top:1px">${escHtml(l.ts||'')}</div>
               ${canDelete?`<button onclick="deleteUpload(${i})" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);cursor:pointer;font-size:11px;padding:3px 9px;font-family:inherit" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='var(--red)'">ลบ</button>`:''}
@@ -3016,8 +3396,8 @@ function deleteUpload(i){
 
 // ── USER MANAGEMENT ──
 function renderUsers(){
-  const rC={admin:'#ef4444',supervisor:'#a855f7',branch:'#22c55e',readonly:'#7e92bb'};
-  const rL={admin:'Admin',supervisor:'Supervisor',branch:'Branch',readonly:'Read-only'};
+  const rC={admin:'#ef4444',supervisor:'#a855f7',branch:'#22c55e',cost_uploader:'#14b8a6',readonly:'#7e92bb'};
+  const rL={admin:'Admin',supervisor:'Supervisor',branch:'Branch',cost_uploader:'HR/โกดัง',readonly:'Read-only'};
   document.getElementById('ulist').innerHTML=USERS.map(u=>`
     <div class="ucard" style="display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--c2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
       <div style="width:34px;height:34px;border-radius:50%;background:${rC[u.role]}22;color:${rC[u.role]};display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex-shrink:0">${u.name.slice(0,2)}</div>
@@ -3110,22 +3490,24 @@ function delUser(uid){
 // ── NAV ──
 const PG_TITLES={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
 function go(view,el){
+  if(!canView(view)) view=firstAllowedView();
   ACTIVE_VIEW=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.getElementById('v-'+view).classList.add('on');
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
-  el.classList.add('on');
+  if(el) el.classList.add('on');
   document.getElementById('pgtitle').textContent=PG_TITLES[view]||view;
   if(view==='overview') scheduleRefresh('overview');
   else scheduleRefresh('light');
   if(view==='daily') requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches') requestAnimationFrame(()=>renderBranchTable());
-  if(view==='upload') requestAnimationFrame(()=>{renderOnlineBranchOptions();renderUpLog();});
+  if(view==='upload') requestAnimationFrame(()=>{applyUploadRoleVisibility();renderOnlineBranchOptions();renderUpLog();});
   if(view==='users') requestAnimationFrame(()=>renderUsers());
 }
 
 // ── MOBILE ──
 function mobGo(view,el){
+  if(!canView(view)) view=firstAllowedView();
   ACTIVE_VIEW=view;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   const vEl=document.getElementById('v-'+view);
@@ -3136,10 +3518,10 @@ function mobGo(view,el){
   else scheduleRefresh('light');
   if(view==='daily')requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches')requestAnimationFrame(()=>renderBranchTable());
-  if(view==='upload')requestAnimationFrame(()=>{renderOnlineBranchOptions();renderUpLog();});
+  if(view==='upload')requestAnimationFrame(()=>{applyUploadRoleVisibility();renderOnlineBranchOptions();renderUpLog();});
   if(view==='users')requestAnimationFrame(()=>renderUsers());
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
-  el.classList.add('on');
+  if(el)el.classList.add('on');
 }
 function mobChangePeriod(mode){
   // Sync with desktop
@@ -3230,8 +3612,14 @@ function mobOpenSheet(){
 }
 function mobCloseSheet(){document.getElementById('mob-sheet').classList.remove('open');}
 function mobInitNav(){
+  document.querySelectorAll('#mob-bar .mob-tab').forEach(btn=>{
+    const view=btn.getAttribute('onclick')?.match(/mobGo\('(\w+)'/)?.[1];
+    if(view) btn.style.display=canView(view)?'':'none';
+  });
   const ut=document.getElementById('mbt-users');
   if(ut)ut.style.display=(CU&&CU.role==='admin')?'':'none';
+  const fab=document.getElementById('mob-fab');
+  if(fab) fab.hidden=CU?.role==='cost_uploader';
 }
 
 
@@ -3387,11 +3775,22 @@ async function loadBranchData(){
       // restore cost (monthly + backward compatibility)
       const curKey=`${yy}_${mm}`;
       if(d.rentRule) RENT_RULE[id]={type:d.rentRule.type||'manual',min:+d.rentRule.min||0,fixed:+d.rentRule.fixed||0,rate:+d.rentRule.rate||28};
-      if(d.costs) branchMonthlyCosts[id]=d.costs;
+      if(d.costs){
+        if(!branchMonthlyCosts[id]) branchMonthlyCosts[id]={};
+        Object.entries(d.costs).forEach(([key,c])=>{
+          const cur=branchMonthlyCosts[id][key]||{};
+          branchMonthlyCosts[id][key]={
+            labor:(+c.labor||0)||(+cur.labor||0),
+            rent:(+c.rent||0)||(+cur.rent||0),
+            service:(+c.service||0)||(+cur.service||0)
+          };
+        });
+      }
       else{
         const legacyCost={labor:+d.labor||0,rent:+d.rent||0,service:+d.service||0};
         if(legacyCost.labor||legacyCost.rent||legacyCost.service){
-          branchMonthlyCosts[id]={[curKey]:legacyCost};
+          if(!branchMonthlyCosts[id]) branchMonthlyCosts[id]={};
+          branchMonthlyCosts[id][curKey]=legacyCost;
         }
       }
       if(COST[id]){
@@ -3407,13 +3806,21 @@ async function loadBranchData(){
       if(branch&&d.sup) branch.sup=d.sup;
       // restore target for current month (also load all months into branchTargets)
       // Default: current month target
-      if(d.targets&&d.targets[curKey]!==undefined){
-        branchTargets[id]=d.targets[curKey];
-      } else if(d.target!==undefined){
-        branchTargets[id]=d.target; // backward compat
-      }
       // Store all monthly targets for future use
-      if(d.targets) branchMonthlyTargets[id]=d.targets;
+      if(d.targets){
+        if(!branchMonthlyTargets[id]) branchMonthlyTargets[id]={};
+        Object.entries(d.targets).forEach(([key,value])=>{
+          const next=+value||0;
+          const cur=+branchMonthlyTargets[id][key]||0;
+          branchMonthlyTargets[id][key]=next||cur;
+        });
+      } else if(d.target!==undefined){
+        if(!branchMonthlyTargets[id]) branchMonthlyTargets[id]={};
+        branchMonthlyTargets[id][curKey]=+d.target||0; // backward compat
+      }
+      if(branchMonthlyTargets[id]&&branchMonthlyTargets[id][curKey]!==undefined){
+        branchTargets[id]=branchMonthlyTargets[id][curKey];
+      }
     });
   }catch(e){console.error('loadBranchData:',e);}
 }
@@ -3422,6 +3829,8 @@ async function loadBranchData(){
 
 function loadCostForPeriod(){
   const spec=getCostPeriodSpec();
+  const ratio=getCostPeriodRatio();
+  const rentFormulaRatio=getRentFormulaRatio();
   BR.forEach(b=>{
     const monthly=branchMonthlyCosts[b.id]||{};
     let cost={labor:0,rent:0,service:0};
@@ -3436,37 +3845,26 @@ function loadCostForPeriod(){
         cost.service+=(+c.service||0);
       });
     }
-    COST[b.id].labor=cost.labor||0;
-    COST[b.id].rent=cost.rent||0;
-    COST[b.id].service=cost.service||0;
-    syncFormulaRentForBranch(b.id);
+    COST[b.id].labor=Math.round((cost.labor||0)*ratio);
+    COST[b.id].rent=Math.round((cost.rent||0)*ratio);
+    COST[b.id].service=Math.round((cost.service||0)*ratio);
+    syncFormulaRentForBranch(b.id,rentFormulaRatio);
   });
 }
 
 function loadTargetForPeriod(){
-  const mEl=document.getElementById('dp-m');
-  const yEl=document.getElementById('dp-y');
-  if(!mEl||!yEl) return;
-  const mm=String(parseInt(mEl.value)).padStart(2,'0');
-  const yy=yEl.value;
-  const key=`${yy}_${mm}`;
+  const {key}=getSelectedMonthPeriod();
   BR.forEach(b=>{
     const monthly=branchMonthlyTargets[b.id];
     if(monthly&&monthly[key]!==undefined) branchTargets[b.id]=monthly[key];
-    else if(monthly){
-      // ถ้าไม่มีของเดือนนั้น ให้เป็น 0
-      branchTargets[b.id]=0;
-    }
+    else branchTargets[b.id]=0;
   });
 }
 
 async function saveBranchDataToDB(id){
   if(!db) return false;
   try{
-    const mEl=document.getElementById('dp-m');
-    const yEl=document.getElementById('dp-y');
-    const mm=String(mEl?parseInt(mEl.value):new Date().getMonth()+1).padStart(2,'0');
-    const yy=yEl?yEl.value:String(new Date().getFullYear());
+    const selectedPeriod=getSelectedMonthPeriod();
     const branch=BR.find(b=>b.id===id);
     const ref=db.collection('branch_data').doc(id);
     // Step 1: save cost + sup (always overwrite)
@@ -3479,7 +3877,7 @@ async function saveBranchDataToDB(id){
       updatedAt:new Date().toISOString()
     },{merge:true});
     // Step 2: save target + monthly cost for this period
-    const periodKey=`${yy}_${mm}`;
+    const periodKey=selectedPeriod.key;
     const targetField=`targets.${periodKey}`;
     const laborField=`costs.${periodKey}.labor`;
     const rentField=`costs.${periodKey}.rent`;
@@ -3490,6 +3888,8 @@ async function saveBranchDataToDB(id){
       rent:COST[id]?.rent||0,
       service:COST[id]?.service||0
     };
+    if(!branchMonthlyTargets[id]) branchMonthlyTargets[id]={};
+    branchMonthlyTargets[id][periodKey]=branchTargets[id]||0;
     await ref.update({
       [targetField]:branchTargets[id]||0,
       [laborField]:COST[id]?.labor||0,
@@ -3549,11 +3949,12 @@ async function loadAllData(){
   try{
     await loadBranchMaster();
     await Promise.all([loadBranchData(),loadUsersFromDB()]);
-    await loadUploadLogs();
+    if(CU?.role!=='cost_uploader') await loadUploadLogs();
     lockSelBr(); // re-lock selBr หลัง load เสร็จ ป้องกัน filter overwrite
     loadTargetForPeriod();
     loadCostForPeriod();
-    refreshOverviewOnly();
+    applyUploadRoleVisibility();
+    if(CU?.role!=='cost_uploader') refreshOverviewOnly();
     if(document.getElementById('v-branches').classList.contains('on')) renderBranchTable();
   }catch(e){console.error('loadAllData error:',e);scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');}
 }
