@@ -199,11 +199,20 @@ details.le>summary::-webkit-details-marker{display:none}
 .rtab:hover:not(.on){border-color:var(--border2);color:var(--tx)}
 .chart-sort-controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .mini-select{background:var(--c2);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:5px 8px;font-size:11px;min-height:28px}
-.branch-sort-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;max-height:430px;overflow:auto;padding-right:2px}
-.branch-sort-card{background:var(--c0);border:1px solid var(--border);border-radius:8px;padding:9px 10px}
-.branch-sort-card.pass{border-color:rgba(34,197,94,.55);box-shadow:inset 2px 0 0 var(--green)}
-.branch-sort-card.fail{border-color:rgba(239,68,68,.55);box-shadow:inset 2px 0 0 var(--red)}
-.branch-sort-card.neutral{border-color:var(--border)}
+.branch-sort-list{max-height:calc(100vh - 210px);overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--c0)}
+.rank-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;font-size:12px}
+.rank-table th{position:sticky;top:0;background:#090f1d;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.35px;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border);z-index:1}
+.rank-table td{padding:8px 10px;border-bottom:1px solid rgba(31,48,85,.48);vertical-align:middle}
+.rank-table tr:last-child td{border-bottom:none}
+.rank-table td:not(:first-child),.rank-table th:not(:first-child){text-align:right;font-family:'IBM Plex Mono',monospace}
+.rank-table .br-name{font-weight:600;color:var(--tx);white-space:nowrap}
+.rank-table .br-meta{font-size:10.5px;color:var(--tx3);margin-top:2px;white-space:nowrap}
+.rank-table tr.pass td:first-child{box-shadow:inset 3px 0 0 var(--green)}
+.rank-table tr.fail td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.rank-table tr.neutral td:first-child{box-shadow:inset 3px 0 0 var(--border2)}
+.metric-pass{color:var(--green);font-weight:600}
+.metric-fail{color:var(--red);font-weight:600}
+.metric-neutral{color:var(--tx3)}
 
 /* cost / progress */
 .cinp{width:100%;background:var(--c0);border:1px solid var(--border);border-radius:5px;color:var(--tx);font-size:11px;padding:3px 6px;text-align:right;outline:none;font-family:'IBM Plex Mono',monospace;transition:border-color .13s}
@@ -338,6 +347,7 @@ details.le>summary::-webkit-details-marker{display:none}
     <div class="nav on" onclick="go('overview',this)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg><span>ภาพรวม</span></div>
     <div class="nav" onclick="go('daily',this)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><span>ยอดรายวัน</span></div>
     <div class="nav" onclick="go('branches',this)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg><span>สาขา</span></div>
+    <div class="nav" onclick="go('ranking',this)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h10M7 12h7M7 17h4M4 5v14M20 5v14"/></svg><span>จัดเรียงสาขา</span></div>
     <div class="nav" onclick="go('upload',this)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg><span>อัปโหลด Excel</span></div>
     <div class="nav" id="nav-users" onclick="go('users',this)"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg><span>จัดการผู้ใช้</span></div>
   </div>
@@ -464,7 +474,10 @@ details.le>summary::-webkit-details-marker{display:none}
         <div class="panel">
           <div class="ph">
             <span class="pt">สาขา Top 5</span>
-            <span class="pbadge">เรียงตามยอดขาย</span>
+            <select id="branch-top-mode" class="mini-select" onchange="setBranchTopMode(this.value)">
+              <option value="rev">ยอดขาย</option>
+              <option value="targetPct">% ต่อเป้า</option>
+            </select>
           </div>
           <div class="pwrap" style="height:250px"><canvas id="ch-branch" role="img" aria-label="สาขา"></canvas></div>
         </div>
@@ -478,30 +491,6 @@ details.le>summary::-webkit-details-marker{display:none}
           </div>
           <div class="pwrap" style="height:360px"><canvas id="ch-menu-ov" role="img" aria-label="เมนู"></canvas></div>
         </div>
-      </div>
-
-      <div class="panel" style="margin-bottom:11px" id="branch-sort-panel">
-        <div class="ph">
-          <span class="pt">จัดเรียงสาขาทั้งหมด</span>
-          <div class="chart-sort-controls">
-            <select id="branch-list-metric" class="mini-select" onchange="setBranchListSort()">
-              <option value="rev">ยอดขาย</option>
-              <option value="labor">ค่าแรง</option>
-              <option value="costPct">% ต้นทุนขาย</option>
-              <option value="washAvg">เวลาล้างรถ</option>
-            </select>
-            <select id="branch-list-dir" class="mini-select" onchange="setBranchListSort()">
-              <option value="desc">มาก→น้อย</option>
-              <option value="asc">น้อย→มาก</option>
-            </select>
-            <select id="branch-list-status" class="mini-select" onchange="setBranchListSort()">
-              <option value="all">ทุกสาขา</option>
-              <option value="pass">เฉพาะผ่าน</option>
-              <option value="fail">เฉพาะไม่ผ่าน</option>
-            </select>
-          </div>
-        </div>
-        <div id="branch-sort-list" class="branch-sort-list"></div>
       </div>
 
       <!-- Brand / Size / Cmp / Sup -->
@@ -520,6 +509,34 @@ details.le>summary::-webkit-details-marker{display:none}
           <div class="divider"></div>
           <div class="pwrap" style="height:100px"><canvas id="ch-size" role="img" aria-label="ลูกค้าใหม่และลูกค้าเก่า"></canvas></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ═══ RANKING ═══ -->
+    <div id="v-ranking" class="view">
+      <div class="panel" style="margin-bottom:11px" id="branch-sort-panel">
+        <div class="ph">
+          <span class="pt">จัดเรียงสาขาทั้งหมด</span>
+          <div class="chart-sort-controls">
+            <select id="branch-list-metric" class="mini-select" onchange="setBranchListSort()">
+              <option value="rev">ยอดขาย</option>
+              <option value="labor">ค่าแรง</option>
+              <option value="costPct">% ต้นทุนขาย</option>
+              <option value="totalCost">ต้นทุนรวม</option>
+              <option value="washAvg">เวลาล้างรถ</option>
+            </select>
+            <select id="branch-list-dir" class="mini-select" onchange="setBranchListSort()">
+              <option value="desc">มาก→น้อย</option>
+              <option value="asc">น้อย→มาก</option>
+            </select>
+            <select id="branch-list-status" class="mini-select" onchange="setBranchListSort()">
+              <option value="all">ทุกสาขา</option>
+              <option value="pass">เฉพาะผ่าน</option>
+              <option value="fail">เฉพาะไม่ผ่าน</option>
+            </select>
+          </div>
+        </div>
+        <div id="branch-sort-list" class="branch-sort-list"></div>
       </div>
     </div>
 
@@ -950,9 +967,9 @@ const UPLOG=[];
 let PENDING=null;
 
 // ── PERMISSIONS ──
-const PERMS=['overview','daily','branches','upload','users'];
-const PLBL={overview:'ภาพรวม',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
-const PDEF={admin:PERMS,supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],cost_uploader:['upload'],readonly:['overview','daily']};
+const PERMS=['overview','daily','branches','ranking','upload','users'];
+const PLBL={overview:'ภาพรวม',daily:'ยอดรายวัน',branches:'สาขา',ranking:'จัดเรียงสาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
+const PDEF={admin:PERMS,supervisor:['overview','daily','branches','ranking','upload'],branch:['overview','daily','branches','ranking','upload'],cost_uploader:['upload'],readonly:['overview','daily','ranking']};
 
 // ── USER DB ──
 // Local fallback users — always available even without Firebase
@@ -962,7 +979,7 @@ const LOCAL_USERS=[
 let USERS=[...LOCAL_USERS];
 let nextUid=2;
 let CU=null; // current user
-const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches','upload'],branch:['overview','daily','upload'],cost_uploader:['upload'],readonly:['overview','daily']};
+const ROLE_BASE_PERMS={admin:[...PERMS],supervisor:['overview','daily','branches','ranking','upload'],branch:['overview','daily','branches','ranking','upload'],cost_uploader:['upload'],readonly:['overview','daily','ranking']};
 function normalizeUser(u){
   if(!u) return u;
   const role=u.role||'readonly';
@@ -977,7 +994,7 @@ function canEditBranch(){return CU&&(CU.role==='admin'||CU.role==='supervisor');
 function canManageUsers(){return CU&&CU.role==='admin';}
 function canView(view){return !!(CU&&(CU.role==='admin'||(CU.perms||[]).includes(view)));}
 function firstAllowedView(){
-  return ['overview','daily','branches','upload','users'].find(v=>canView(v))||'overview';
+  return ['overview','daily','branches','ranking','upload','users'].find(v=>canView(v))||'overview';
 }
 
 // ── STATE ──
@@ -986,6 +1003,7 @@ let CY=new Date().getFullYear();
 let brandTab='all';
 let brSortKey='rev';let brSortAsc=false;
 let menuOvMode='rev';
+let branchTopMode='rev';
 let branchListMetric='rev';
 let branchListDir='desc';
 let branchListStatus='all';
@@ -2029,38 +2047,48 @@ function getBranchMetricRows(){
 }
 function branchMetricValue(b,metric){
   if(metric==='labor') return b._labor;
+  if(metric==='totalCost') return b._totalCost;
   if(metric==='costPct') return b._costPct||0;
   if(metric==='washAvg') return b._washAvg||0;
+  if(metric==='targetPct') return b._targetPct||0;
   return b._rev;
 }
 function branchMetricStatus(b,metric){
-  if(metric==='costPct') return costStatus(b._costPct,b._totalCost>0);
+  if(metric==='labor'||metric==='costPct'||metric==='totalCost') return costStatus(b._costPct,b._totalCost>0);
   if(metric==='washAvg') return washStatus(b._washAvg);
-  if(metric==='rev') return targetStatus(b._targetPct,b._target>0);
+  if(metric==='rev'||metric==='targetPct') return targetStatus(b._targetPct,b._target>0);
   return {state:'neutral',pass:null,color:'#f59e0b',label:'ไม่มีเกณฑ์ผ่าน/ไม่ผ่าน'};
 }
 function branchMetricText(b,metric){
   if(metric==='labor') return fmt(b._labor);
+  if(metric==='totalCost') return fmt(b._totalCost);
   if(metric==='costPct') return pctLabel(b._costPct);
   if(metric==='washAvg') return fmtDuration(b._washAvg);
+  if(metric==='targetPct') return b._target>0?b._targetPct.toFixed(1)+'%':'N/A';
   return fmt(b._rev);
 }
 function branchMetricSubText(b,metric){
   if(metric==='labor') return `ยอดขาย ${fmt(b._rev)}`;
+  if(metric==='totalCost') return `${pctLabel(b._costPct)} ของยอดขาย`;
   if(metric==='costPct') return `ต้นทุน ${fmt(b._totalCost)} / ยอดขาย ${fmt(b._rev)}`;
   if(metric==='washAvg') return `${fN(b._washCount)} งานล้างรถที่มีเวลา`;
+  if(metric==='targetPct') return b._target>0?`${fmt(b._rev)} / เป้า ${fmt(b._target)}`:'ยังไม่ตั้งเป้า';
   return b._target>0?`${b._targetPct.toFixed(1)}% ต่อเป้า ${fmt(b._target)}`:'ยังไม่ตั้งเป้า';
 }
 function sortBranchMetricRows(rows,metric,dir){
   const mult=dir==='asc'?1:-1;
   return rows.sort((a,b)=>{
-    const am=(metric==='costPct'&&a._costPct===null)||(metric==='washAvg'&&a._washAvg===null);
-    const bm=(metric==='costPct'&&b._costPct===null)||(metric==='washAvg'&&b._washAvg===null);
+    const am=(metric==='costPct'&&a._costPct===null)||(metric==='washAvg'&&a._washAvg===null)||(metric==='targetPct'&&a._target<=0);
+    const bm=(metric==='costPct'&&b._costPct===null)||(metric==='washAvg'&&b._washAvg===null)||(metric==='targetPct'&&b._target<=0);
     if(am!==bm) return am?1:-1;
     const av=branchMetricValue(a,metric),bv=branchMetricValue(b,metric);
     if(av!==bv) return (av-bv)*mult;
     return b._rev-a._rev;
   });
+}
+function setBranchTopMode(value){
+  branchTopMode=value==='targetPct'?'targetPct':'rev';
+  drawBranchChart();
 }
 function setBranchListSort(){
   branchListMetric=document.getElementById('branch-list-metric')?.value||'rev';
@@ -2070,10 +2098,12 @@ function setBranchListSort(){
 }
 function drawBranchChart(){
   dc('branch');
-  const sorted=sortBranchMetricRows(getBranchMetricRows(),'rev','desc').slice(0,5);
-  const values=sorted.map(b=>b._rev);
-  const colors=sorted.map(b=>branchMetricStatus(b,'rev').color);
-  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sorted.map(b=>b.id),datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sorted[i[0].dataIndex]?.name||'',label:i=>{const b=sorted[i.dataIndex];return `ยอดขาย ${fmt(b._rev)} · ${branchMetricSubText(b,'rev')}`;}}}}}});
+  const mode=branchTopMode==='targetPct'?'targetPct':'rev';
+  const sorted=sortBranchMetricRows(getBranchMetricRows(),mode,'desc').slice(0,5);
+  const values=sorted.map(b=>branchMetricValue(b,mode));
+  const colors=sorted.map(b=>branchMetricStatus(b,mode).color);
+  const isPct=mode==='targetPct';
+  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sorted.map(b=>b.id),datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>isPct?v.toFixed(0)+'%':'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sorted[i[0].dataIndex]?.name||'',label:i=>{const b=sorted[i.dataIndex];return isPct?`% ต่อเป้า ${branchMetricText(b,'targetPct')} · ${branchMetricSubText(b,'targetPct')}`:`ยอดขาย ${fmt(b._rev)} · ${branchMetricSubText(b,'rev')}`;}}}}}});
 }
 function renderBranchSortList(){
   const el=document.getElementById('branch-sort-list');
@@ -2081,27 +2111,41 @@ function renderBranchSortList(){
   const metric=branchListMetric;
   const statusFilter=branchListStatus;
   let rows=sortBranchMetricRows(getBranchMetricRows(),metric,branchListDir);
-  if(statusFilter!=='all'&&metric!=='labor'){
+  if(statusFilter!=='all'){
     rows=rows.filter(b=>branchMetricStatus(b,metric).state===statusFilter);
   }
   if(!rows.length){
     el.innerHTML='<div style="color:var(--tx3);font-size:12px;padding:10px 0">ไม่พบสาขาที่ตรงเงื่อนไข</div>';
     return;
   }
-  el.innerHTML=rows.map((b,i)=>{
+  el.innerHTML=`<table class="rank-table">
+    <thead><tr>
+      <th>สาขา</th>
+      <th>รายได้</th>
+      <th>ค่าแรง</th>
+      <th>% ต้นทุน</th>
+      <th>ต้นทุน</th>
+      <th>เวลา</th>
+      <th>สถานะ</th>
+    </tr></thead>
+    <tbody>${rows.map((b,i)=>{
     const st=branchMetricStatus(b,metric);
-    return `<div class="branch-sort-card ${st.state}">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-        <div style="min-width:0">
-          <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i+1}. ${escHtml(b.name)}</div>
-          <div style="font-size:10.5px;color:var(--tx3);margin-top:2px">${escHtml(b.id)} · ${escHtml(b.sup)} · ${escHtml(BL[b.brand]||b.brand)}</div>
-        </div>
-        <span class="pbadge" style="color:${st.color};background:${st.state==='pass'?'rgba(34,197,94,.13)':st.state==='fail'?'rgba(239,68,68,.13)':'rgba(126,146,187,.12)'}">${st.label}</span>
-      </div>
-      <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:${st.color}">${branchMetricText(b,metric)}</div>
-      <div style="font-size:10.5px;color:var(--tx3);margin-top:2px">${branchMetricSubText(b,metric)}</div>
-    </div>`;
-  }).join('');
+    const cls=st.state==='pass'?'metric-pass':st.state==='fail'?'metric-fail':'metric-neutral';
+    const costCls=b._totalCost>0?(costStatus(b._costPct,true).state==='pass'?'metric-pass':'metric-fail'):'metric-neutral';
+    const washCls=washStatus(b._washAvg).state==='pass'?'metric-pass':washStatus(b._washAvg).state==='fail'?'metric-fail':'metric-neutral';
+    return `<tr class="${st.state}">
+      <td>
+        <div class="br-name">${i+1}. ${escHtml(b.name)}</div>
+        <div class="br-meta">${escHtml(b.id)} · ${escHtml(b.sup)} · ${escHtml(BL[b.brand]||b.brand)}</div>
+      </td>
+      <td class="${metric==='rev'||metric==='targetPct'?cls:''}">${fmt(b._rev)}</td>
+      <td>${fmt(b._labor)}</td>
+      <td class="${costCls}">${pctLabel(b._costPct)}</td>
+      <td class="${costCls}">${fmt(b._totalCost)}</td>
+      <td class="${washCls}">${fmtDuration(b._washAvg)}</td>
+      <td class="${cls}">${st.label}</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
 }
 
 function drawBrandChart(){
@@ -3586,7 +3630,7 @@ function delUser(uid){
 }
 
 // ── NAV ──
-const PG_TITLES={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
+const PG_TITLES={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',ranking:'จัดเรียงสาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
 function go(view,el){
   if(!canView(view)) view=firstAllowedView();
   ACTIVE_VIEW=view;
@@ -3599,6 +3643,7 @@ function go(view,el){
   else scheduleRefresh('light');
   if(view==='daily') requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches') requestAnimationFrame(()=>renderBranchTable());
+  if(view==='ranking') requestAnimationFrame(()=>renderBranchSortList());
   if(view==='upload') requestAnimationFrame(()=>{applyUploadRoleVisibility();renderOnlineBranchOptions();renderUpLog();});
   if(view==='users') requestAnimationFrame(()=>renderUsers());
 }
@@ -3610,12 +3655,13 @@ function mobGo(view,el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   const vEl=document.getElementById('v-'+view);
   if(vEl)vEl.classList.add('on');
-  const titles={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
+  const titles={overview:'ภาพรวมยอดขาย',daily:'ยอดรายวัน',branches:'สาขา',ranking:'จัดเรียงสาขา',upload:'อัปโหลด Excel',users:'จัดการผู้ใช้'};
   document.getElementById('pgtitle').textContent=titles[view]||view;
   if(view==='overview') scheduleRefresh('overview');
   else scheduleRefresh('light');
   if(view==='daily')requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches')requestAnimationFrame(()=>renderBranchTable());
+  if(view==='ranking')requestAnimationFrame(()=>renderBranchSortList());
   if(view==='upload')requestAnimationFrame(()=>{applyUploadRoleVisibility();renderOnlineBranchOptions();renderUpLog();});
   if(view==='users')requestAnimationFrame(()=>renderUsers());
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
