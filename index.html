@@ -199,6 +199,11 @@ details.le>summary::-webkit-details-marker{display:none}
 .rtab:hover:not(.on){border-color:var(--border2);color:var(--tx)}
 .chart-sort-controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .mini-select{background:var(--c2);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:5px 8px;font-size:11px;min-height:28px}
+.branch-sort-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;max-height:430px;overflow:auto;padding-right:2px}
+.branch-sort-card{background:var(--c0);border:1px solid var(--border);border-radius:8px;padding:9px 10px}
+.branch-sort-card.pass{border-color:rgba(34,197,94,.55);box-shadow:inset 2px 0 0 var(--green)}
+.branch-sort-card.fail{border-color:rgba(239,68,68,.55);box-shadow:inset 2px 0 0 var(--red)}
+.branch-sort-card.neutral{border-color:var(--border)}
 
 /* cost / progress */
 .cinp{width:100%;background:var(--c0);border:1px solid var(--border);border-radius:5px;color:var(--tx);font-size:11px;padding:3px 6px;text-align:right;outline:none;font-family:'IBM Plex Mono',monospace;transition:border-color .13s}
@@ -421,20 +426,6 @@ details.le>summary::-webkit-details-marker{display:none}
       <!-- Main KPI -->
       <div class="kg" id="kpi-main"></div>
 
-      <div class="panel" style="margin-bottom:11px" id="work-ov-panel">
-        <div class="ph">
-          <span class="pt">ระยะเวลาล้างรถ</span>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span class="pbadge">เฉพาะบริการที่มีคำว่า ล้างรถ</span>
-            <label style="font-size:10.5px;color:var(--tx3);display:flex;align-items:center;gap:4px">ผ่าน ≤
-              <input id="wash-time-limit" type="number" min="1" value="60" onchange="setWashTimeLimit(this.value)" style="width:54px;background:var(--c0);border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:3px 5px;font-size:11px">
-              นาที
-            </label>
-          </div>
-        </div>
-        <div class="work-kpi-row" id="work-ov-kpi"></div>
-      </div>
-
       <!-- Target bar -->
       <div class="panel" style="margin-bottom:11px" id="tgt-panel">
         <div class="ph">
@@ -473,18 +464,7 @@ details.le>summary::-webkit-details-marker{display:none}
         <div class="panel">
           <div class="ph">
             <span class="pt">สาขา Top 5</span>
-            <div class="chart-sort-controls">
-              <select id="branch-sort-metric" class="mini-select" onchange="setBranchSort()">
-                <option value="rev">ยอดขาย</option>
-                <option value="labor">ค่าแรง</option>
-                <option value="costPct">% ต้นทุนขาย</option>
-                <option value="washAvg">เวลาล้างรถ</option>
-              </select>
-              <select id="branch-sort-dir" class="mini-select" onchange="setBranchSort()">
-                <option value="desc">มาก→น้อย</option>
-                <option value="asc">น้อย→มาก</option>
-              </select>
-            </div>
+            <span class="pbadge">เรียงตามยอดขาย</span>
           </div>
           <div class="pwrap" style="height:250px"><canvas id="ch-branch" role="img" aria-label="สาขา"></canvas></div>
         </div>
@@ -498,6 +478,30 @@ details.le>summary::-webkit-details-marker{display:none}
           </div>
           <div class="pwrap" style="height:360px"><canvas id="ch-menu-ov" role="img" aria-label="เมนู"></canvas></div>
         </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:11px" id="branch-sort-panel">
+        <div class="ph">
+          <span class="pt">จัดเรียงสาขาทั้งหมด</span>
+          <div class="chart-sort-controls">
+            <select id="branch-list-metric" class="mini-select" onchange="setBranchListSort()">
+              <option value="rev">ยอดขาย</option>
+              <option value="labor">ค่าแรง</option>
+              <option value="costPct">% ต้นทุนขาย</option>
+              <option value="washAvg">เวลาล้างรถ</option>
+            </select>
+            <select id="branch-list-dir" class="mini-select" onchange="setBranchListSort()">
+              <option value="desc">มาก→น้อย</option>
+              <option value="asc">น้อย→มาก</option>
+            </select>
+            <select id="branch-list-status" class="mini-select" onchange="setBranchListSort()">
+              <option value="all">ทุกสาขา</option>
+              <option value="pass">เฉพาะผ่าน</option>
+              <option value="fail">เฉพาะไม่ผ่าน</option>
+            </select>
+          </div>
+        </div>
+        <div id="branch-sort-list" class="branch-sort-list"></div>
       </div>
 
       <!-- Brand / Size / Cmp / Sup -->
@@ -913,6 +917,21 @@ function costKpiClassFor(rev,cost,pct){
   if(cost>0&&pct!==null&&pct>42) return 'r';
   return 'g';
 }
+function targetStatus(pct,hasTarget=true){
+  if(!hasTarget||pct===null||pct===undefined||!Number.isFinite(+pct)) return {state:'neutral',pass:null,color:'var(--tx3)',label:'ยังไม่ตั้งเป้า'};
+  const pass=+pct>=70;
+  return {state:pass?'pass':'fail',pass,color:pass?'var(--green)':'var(--red)',label:pass?'ผ่าน':'ไม่ผ่าน'};
+}
+function costStatus(pct,hasCost=true){
+  if(!hasCost||pct===null||pct===undefined||!Number.isFinite(+pct)) return {state:'neutral',pass:null,color:'var(--tx3)',label:'ยังไม่มีต้นทุน'};
+  const pass=+pct<=42;
+  return {state:pass?'pass':'fail',pass,color:pass?'var(--green)':'var(--red)',label:pass?'ผ่าน':'ไม่ผ่าน'};
+}
+function washStatus(avg){
+  if(avg===null||avg===undefined||!Number.isFinite(+avg)) return {state:'neutral',pass:null,color:'var(--tx3)',label:'ยังไม่มีเวลา'};
+  const pass=+avg<=washTimeLimit;
+  return {state:pass?'pass':'fail',pass,color:pass?'var(--green)':'var(--red)',label:pass?'ผ่าน':'เกินเกณฑ์'};
+}
 function removeBranchState(id){
   delete DATA[id]; delete COST[id]; delete branchTargets[id]; delete branchMonthlyCosts[id]; delete branchMonthlyTargets[id]; delete RENT_RULE[id];
   Object.keys(DAILY_EXTRA).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_EXTRA[k];});
@@ -967,8 +986,9 @@ let CY=new Date().getFullYear();
 let brandTab='all';
 let brSortKey='rev';let brSortAsc=false;
 let menuOvMode='rev';
-let branchSortMetric='rev';
-let branchSortDir='desc';
+let branchListMetric='rev';
+let branchListDir='desc';
+let branchListStatus='all';
 let brFilteredIds=null; // null = all
 const CH={};
 let DATA_VERSION=0;
@@ -1532,40 +1552,27 @@ function scheduleRefresh(scope='all'){
 function setWashTimeLimit(value){
   const n=parseFloat(value);
   washTimeLimit=Number.isFinite(n)&&n>0?n:60;
-  const inp=document.getElementById('wash-time-limit');
-  if(inp) inp.value=washTimeLimit;
+  document.querySelectorAll('.wash-time-limit').forEach(inp=>{inp.value=washTimeLimit;});
   refreshOverviewOnly();
   if(CH.branch) drawBranchChart();
+  renderBranchSortList();
 }
-function workDurationCard(label,stats,color,desc,note=''){
-  const count=+stats.count||0;
-  const minutes=+stats.minutes||0;
-  const avg=count?minutes/count:null;
-  const countText=note||`${fN(count)} งาน · รวม ${count?fN(minutes)+' นาที':'—'}`;
-  return `
-    <div class="ckpi" onclick="showWorkDurationInfo()" title="คลิกดูรายละเอียด" style="cursor:pointer;border-color:${color};box-shadow:inset 0 2px 0 ${color}">
-      <div class="ck-lbl">${label}</div>
-      <div class="ck-val" style="font-size:22px">${fmtDuration(avg)}</div>
-      <div style="font-size:11px;color:var(--tx3);margin-top:5px">${desc}</div>
-      <div style="font-size:11px;color:var(--tx2);margin-top:3px">${countText}</div>
-    </div>`;
-}
-function renderWorkDurationBox(workStats,totalCars=workStats.count){
-  const el=document.getElementById('work-ov-kpi');
-  if(!el) return;
+function washKpiHtml(workStats){
   const wash=workStats.wash||{minutes:0,count:0};
-  const washAvg=wash.count?wash.minutes/wash.count:null;
-  const pass=washAvg!==null&&washAvg<=washTimeLimit;
-  const statusColor=washAvg===null?'var(--tx3)':pass?'var(--green)':'var(--red)';
-  const statusText=washAvg===null?'ยังไม่มีเวลาล้างรถ':pass?'ผ่าน':'เกินเกณฑ์';
-  el.innerHTML=`
-    <div class="ckpi wash-focus" onclick="showWorkDurationInfo()" title="คลิกดูรายละเอียดเวลาล้างรถ" style="cursor:pointer;border-color:${statusColor};box-shadow:inset 0 2px 0 ${statusColor}">
-      <div class="ck-lbl">เวลาล้างรถเฉลี่ย</div>
-      <div class="ck-val" style="font-size:26px;color:${statusColor}">${fmtDuration(washAvg)}</div>
-      <div style="font-size:11px;color:var(--tx3);margin-top:5px">รวม ${wash.count?fN(wash.minutes)+' นาที':'—'} / ${fN(wash.count)} งานที่มีเวลา</div>
-      <div style="font-size:11px;color:${statusColor};margin-top:3px;font-weight:600">${statusText}${washAvg!==null?` · เกณฑ์ ≤ ${fN(washTimeLimit)} นาที`:''}</div>
+  const avg=wash.count?wash.minutes/wash.count:null;
+  const st=washStatus(avg);
+  return `<div class="kpi t" onclick="showWorkDurationInfo()" title="คลิกดูรายละเอียดเวลาล้างรถ" style="cursor:pointer">
+    <div class="kl">ระยะเวลาล้างรถ</div>
+    <div class="kv" style="color:${st.color}">${fmtDuration(avg)}</div>
+    <div class="ks neu">รวม ${wash.count?fN(wash.minutes)+' นาที':'—'} / ${fN(wash.count)} งาน</div>
+    <div style="margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:10.5px;color:${st.color};font-weight:600">
+      <span>${st.label}</span>
+      <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:3px;color:var(--tx3);font-weight:400">ผ่าน ≤
+        <input class="wash-time-limit" type="number" min="1" value="${washTimeLimit}" onchange="setWashTimeLimit(this.value)" style="width:48px;background:var(--c0);border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:2px 5px;font-size:10.5px">
+        นาที
+      </label>
     </div>
-  `;
+  </div>`;
 }
 function refresh(scope='all'){
   const sel=getSel();
@@ -1577,11 +1584,9 @@ function refresh(scope='all'){
   const tNew=customerCounts.new;
   const avgPerCar=tCars>0?tRev/tCars:null;
   const workStats=getPeriodWorkStats(sel);
-  renderWorkDurationBox(workStats,tCars);
   // cost
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const costPct=calcCostPct(tRev,tCost);
-  const costKpiClass=costKpiClassFor(tRev,tCost,costPct);
   const gp=tRev-tCost;
 
   // YoY compares the same filtered period, not full-year totals.
@@ -1595,7 +1600,7 @@ function refresh(scope='all'){
     <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
-    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):gp>0?'ยังไม่กรอกต้นทุน':'—'}</div></div>`;
+    ${washKpiHtml(workStats)}`;
 
   const brL=sel.length===BR.length?'ทุกสาขา':sel.length<=2?sel.map(b=>b.id).join(', '):`${sel.length} สาขา`;
   document.getElementById('ftag').textContent=`${periodLabel} · ${brL}`;
@@ -1607,6 +1612,7 @@ function refresh(scope='all'){
   if(scope==='all' || scope==='overview'){
     drawDailyChart();
     drawBranchChart();
+    renderBranchSortList();
     drawBrandChart();
     drawSizeChart();
     drawCmpChart();
@@ -2008,14 +2014,8 @@ function drawDailyChart(){
   }});
 }
 
-function setBranchSort(){
-  branchSortMetric=document.getElementById('branch-sort-metric')?.value||'rev';
-  branchSortDir=document.getElementById('branch-sort-dir')?.value||'desc';
-  drawBranchChart();
-}
-function drawBranchChart(){
-  dc('branch');
-  const rows=getSel().map(b=>{
+function getBranchMetricRows(){
+  return getSel().map(b=>{
     const rev=getPeriodRevenue(b.id);
     const target=branchTargets[b.id]||0;
     const targetPct=target>0?(rev/target*100):0;
@@ -2024,49 +2024,84 @@ function drawBranchChart(){
     const costPct=calcCostPct(rev,totalCost);
     const work=getPeriodWorkStats([b]);
     const washAvg=work.wash.count?work.wash.minutes/work.wash.count:null;
-    return {...b,_rev:rev,_target:target,_targetPct:targetPct,_labor:+c.labor||0,_costPct:costPct,_washAvg:washAvg,_washCount:work.wash.count};
+    return {...b,_rev:rev,_target:target,_targetPct:targetPct,_labor:+c.labor||0,_totalCost:totalCost,_costPct:costPct,_washAvg:washAvg,_washCount:work.wash.count};
   });
-  const metric=branchSortMetric;
-  const dir=branchSortDir==='asc'?1:-1;
-  const valueOf=b=>{
-    if(metric==='labor') return b._labor;
-    if(metric==='costPct') return b._costPct||0;
-    if(metric==='washAvg') return b._washAvg||0;
-    return b._rev;
-  };
-  const sorted=rows.sort((a,b)=>{
+}
+function branchMetricValue(b,metric){
+  if(metric==='labor') return b._labor;
+  if(metric==='costPct') return b._costPct||0;
+  if(metric==='washAvg') return b._washAvg||0;
+  return b._rev;
+}
+function branchMetricStatus(b,metric){
+  if(metric==='costPct') return costStatus(b._costPct,b._totalCost>0);
+  if(metric==='washAvg') return washStatus(b._washAvg);
+  if(metric==='rev') return targetStatus(b._targetPct,b._target>0);
+  return {state:'neutral',pass:null,color:'#f59e0b',label:'ไม่มีเกณฑ์ผ่าน/ไม่ผ่าน'};
+}
+function branchMetricText(b,metric){
+  if(metric==='labor') return fmt(b._labor);
+  if(metric==='costPct') return pctLabel(b._costPct);
+  if(metric==='washAvg') return fmtDuration(b._washAvg);
+  return fmt(b._rev);
+}
+function branchMetricSubText(b,metric){
+  if(metric==='labor') return `ยอดขาย ${fmt(b._rev)}`;
+  if(metric==='costPct') return `ต้นทุน ${fmt(b._totalCost)} / ยอดขาย ${fmt(b._rev)}`;
+  if(metric==='washAvg') return `${fN(b._washCount)} งานล้างรถที่มีเวลา`;
+  return b._target>0?`${b._targetPct.toFixed(1)}% ต่อเป้า ${fmt(b._target)}`:'ยังไม่ตั้งเป้า';
+}
+function sortBranchMetricRows(rows,metric,dir){
+  const mult=dir==='asc'?1:-1;
+  return rows.sort((a,b)=>{
     const am=(metric==='costPct'&&a._costPct===null)||(metric==='washAvg'&&a._washAvg===null);
     const bm=(metric==='costPct'&&b._costPct===null)||(metric==='washAvg'&&b._washAvg===null);
     if(am!==bm) return am?1:-1;
-    const av=valueOf(a),bv=valueOf(b);
-    if(av!==bv) return (av-bv)*dir;
-    return (b._rev-a._rev);
-  }).slice(0,5);
-  const values=sorted.map(b=>{
-    if(metric==='labor') return b._labor;
-    if(metric==='costPct') return b._costPct===null?0:+b._costPct.toFixed(1);
-    if(metric==='washAvg') return b._washAvg===null?0:+b._washAvg.toFixed(1);
-    return b._rev;
+    const av=branchMetricValue(a,metric),bv=branchMetricValue(b,metric);
+    if(av!==bv) return (av-bv)*mult;
+    return b._rev-a._rev;
   });
-  const colors=sorted.map(b=>{
-    if(metric==='rev') return b._target>0?(b._targetPct>=70?'#22c55e':'#ef4444'):(BC[b.brand]||'#3b82f6');
-    if(metric==='costPct') return b._costPct===null?'#45588a':(b._costPct<=42?'#22c55e':'#ef4444');
-    if(metric==='washAvg') return b._washAvg===null?'#45588a':(b._washAvg<=washTimeLimit?'#22c55e':'#ef4444');
-    return '#f59e0b';
-  });
-  const yCb=v=>{
-    if(metric==='costPct') return v+'%';
-    if(metric==='washAvg') return v+' นาที';
-    return '฿'+(v/1000).toFixed(0)+'K';
-  };
-  const tipLabel=i=>{
-    const b=sorted[i.dataIndex];
-    if(metric==='labor') return `ค่าแรง ${fmt(b._labor)} · ยอดขาย ${fmt(b._rev)}`;
-    if(metric==='costPct') return `ต้นทุน ${pctLabel(b._costPct)} · ยอดขาย ${fmt(b._rev)}`;
-    if(metric==='washAvg') return `ล้างรถ ${fmtDuration(b._washAvg)} · ${fN(b._washCount)} งาน`;
-    return `ยอดขาย ${fmt(b._rev)} · เป้า ${fmt(b._target)} · ${b._target>0?b._targetPct.toFixed(1)+'% ต่อเป้า':'ยังไม่ตั้งเป้า'}`;
-  };
-  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sorted.map(b=>b.id),datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:yCb}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sorted[i[0].dataIndex]?.name||'',label:tipLabel}}}}});
+}
+function setBranchListSort(){
+  branchListMetric=document.getElementById('branch-list-metric')?.value||'rev';
+  branchListDir=document.getElementById('branch-list-dir')?.value||'desc';
+  branchListStatus=document.getElementById('branch-list-status')?.value||'all';
+  renderBranchSortList();
+}
+function drawBranchChart(){
+  dc('branch');
+  const sorted=sortBranchMetricRows(getBranchMetricRows(),'rev','desc').slice(0,5);
+  const values=sorted.map(b=>b._rev);
+  const colors=sorted.map(b=>branchMetricStatus(b,'rev').color);
+  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sorted.map(b=>b.id),datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sorted[i[0].dataIndex]?.name||'',label:i=>{const b=sorted[i.dataIndex];return `ยอดขาย ${fmt(b._rev)} · ${branchMetricSubText(b,'rev')}`;}}}}}});
+}
+function renderBranchSortList(){
+  const el=document.getElementById('branch-sort-list');
+  if(!el) return;
+  const metric=branchListMetric;
+  const statusFilter=branchListStatus;
+  let rows=sortBranchMetricRows(getBranchMetricRows(),metric,branchListDir);
+  if(statusFilter!=='all'&&metric!=='labor'){
+    rows=rows.filter(b=>branchMetricStatus(b,metric).state===statusFilter);
+  }
+  if(!rows.length){
+    el.innerHTML='<div style="color:var(--tx3);font-size:12px;padding:10px 0">ไม่พบสาขาที่ตรงเงื่อนไข</div>';
+    return;
+  }
+  el.innerHTML=rows.map((b,i)=>{
+    const st=branchMetricStatus(b,metric);
+    return `<div class="branch-sort-card ${st.state}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div style="min-width:0">
+          <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i+1}. ${escHtml(b.name)}</div>
+          <div style="font-size:10.5px;color:var(--tx3);margin-top:2px">${escHtml(b.id)} · ${escHtml(b.sup)} · ${escHtml(BL[b.brand]||b.brand)}</div>
+        </div>
+        <span class="pbadge" style="color:${st.color};background:${st.state==='pass'?'rgba(34,197,94,.13)':st.state==='fail'?'rgba(239,68,68,.13)':'rgba(126,146,187,.12)'}">${st.label}</span>
+      </div>
+      <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:${st.color}">${branchMetricText(b,metric)}</div>
+      <div style="font-size:10.5px;color:var(--tx3);margin-top:2px">${branchMetricSubText(b,metric)}</div>
+    </div>`;
+  }).join('');
 }
 
 function drawBrandChart(){
@@ -2307,10 +2342,8 @@ function refreshOverviewOnly(){
   const tNew=customerCounts.new;
   const avgPerCar=tCars>0?tRev/tCars:null;
   const workStats=getPeriodWorkStats(sel);
-  renderWorkDurationBox(workStats,tCars);
   const tCost=sel.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
   const costPct=calcCostPct(tRev,tCost);
-  const costKpiClass=costKpiClassFor(tRev,tCost,costPct);
   const gp=tRev-tCost;
   const {current:y0,previous:y1}=getCompareYears();
   const v0=getSelectedPeriodRevenueForYear(sel,y0);
@@ -2321,9 +2354,10 @@ function refreshOverviewOnly(){
     <div class="kpi b" onclick="showRevenueBreakdown('all')" title="คลิกดูที่มาของยอดขาย" style="cursor:pointer"><div class="kl">ยอดขายรวม</div><div class="kv">${fmt(tRev)}</div><div class="ks ${yoy>=0?'up':'dn'}">${CY===y0?(yoy>=0?'▲':'▼')+Math.abs(yoy)+`% vs ${y1}`:''}</div></div>
     <div class="kpi g"><div class="kl">จำนวนรถ (คัน)</div><div class="kv">${fN(tCars)}</div><div class="ks neu">เสร็จงาน</div></div>
     <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
-    <div class="kpi ${costKpiClass}"><div class="kl">ต้นทุน / ยอดขาย</div><div class="kv">${tCost>0?pctLabel(costPct):'—'}</div><div class="ks neu">${tCost>0?fmt(tCost):'ยังไม่กรอก'}</div></div>`;
+    ${washKpiHtml(workStats)}`;
   updateCostOv(sel,tRev,tCost,costPct,gp);
   renderTarget(tRev,tOrd,tNew);
+  renderBranchSortList();
 }
 
 // ── BRANCH TABLE ──
@@ -4110,4 +4144,34 @@ else usersLoaded=true;
         <option value="bigc">Big C</option><option value="other">อื่นๆ</option>
       </select>
     </div>
-    <div id="mob-region-fl"
+    <div id="mob-region-fl" style="margin-bottom:9px">
+      <label style="display:block;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">ภูมิภาค</label>
+      <select class="fsel" onchange="document.getElementById('fRegion').value=this.value;applyRegion()">
+        <option value="all">ทุกภูมิภาค</option><option value="bkk">กรุงเทพฯ</option>
+        <option value="central_region">ภาคกลาง</option><option value="north">เหนือ</option>
+        <option value="northeast">อีสาน</option><option value="south">ใต้</option><option value="east">ตะวันออก</option>
+      </select>
+    </div>
+    <div id="mob-sup-fl" style="margin-bottom:9px">
+      <label style="display:block;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">ผู้ดูแล</label>
+      <select class="fsel" id="mob-sup-sel" onchange="document.getElementById('fSup').value=this.value;applySup()">
+        <option value="all">ทุกผู้ดูแล</option>
+      </select>
+    </div>
+    <div id="mob-branch-fl" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px">สาขา</label>
+        <span id="mob-branch-count" style="font-size:10.5px;color:var(--tx3)"></span>
+      </div>
+      <div class="bc-ctrl" style="margin-bottom:7px">
+        <button onclick="mobSelectAllBranches()">ทุกสาขาในตัวกรอง</button>
+        <button onclick="mobSelectNoBranches()">ล้าง</button>
+      </div>
+      <div id="mob-branch-list" style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--c0)"></div>
+    </div>
+    <button onclick="mobCloseSheet()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;margin-top:4px">ปิด</button>
+  </div>
+</div>
+
+</body>
+</html>
