@@ -200,6 +200,8 @@ details.le>summary::-webkit-details-marker{display:none}
 .chart-sort-controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .mini-select{background:var(--c2);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:5px 8px;font-size:11px;min-height:28px}
 .branch-sort-list{max-height:calc(100vh - 210px);overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--c0)}
+#v-ranking .panel{min-height:calc(100vh - 92px)}
+#v-ranking .branch-sort-list{max-height:calc(100vh - 185px)}
 .rank-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;font-size:12px}
 .rank-table th{position:sticky;top:0;background:#090f1d;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.35px;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border);z-index:1}
 .rank-table td{padding:8px 10px;border-bottom:1px solid rgba(31,48,85,.48);vertical-align:middle}
@@ -1039,7 +1041,13 @@ function getLatestYear(){return getKnownYears()[0]||new Date().getFullYear();}
 function sumObj(o){return Object.values(o||{}).reduce((s,v)=>s+(+v||0),0);}
 function getRev(id){const d=DATA[id]||{};return CY==='all'?sumObj(d.revByYear):(+d.revByYear?.[CY]||0);}
 function getOrd(id){const d=DATA[id]||{};return CY==='all'?sumObj(d.ordByYear):(+d.ordByYear?.[CY]||0);}
-function getSel(){return BR.filter(b=>selBr.has(b.id));}
+function isExcludedBranch(bOrId){
+  const id=String(typeof bOrId==='object'?(bOrId?.id||''):bOrId||'').toLowerCase();
+  const name=String(typeof bOrId==='object'?(bOrId?.name||''):'');
+  return id==='ho'||name.includes('สำนักงานใหญ่');
+}
+function getActiveBranches(){return BR.filter(b=>!isExcludedBranch(b));}
+function getSel(){return getActiveBranches().filter(b=>selBr.has(b.id));}
 function isPackage(svc){const s=String(svc||'').toLowerCase();return s.includes('package')||s.includes('บัตร')||s.includes('card')||s.includes('เล่มที่')||s.includes('เลขที่ :');}
 function classifyService(svc,price){
   const s=String(svc||'').toLowerCase();
@@ -1117,9 +1125,9 @@ function initForUser(){
   if(CU.role==='branch'){
     selBr=new Set([CU.scope]);
   } else if(CU.role==='supervisor'){
-    selBr=new Set(BR.filter(b=>b.sup===CU.scope).map(b=>b.id));
+    selBr=new Set(getActiveBranches().filter(b=>b.sup===CU.scope).map(b=>b.id));
   } else {
-    selBr=new Set(BR.map(b=>b.id));
+    selBr=new Set(getActiveBranches().map(b=>b.id));
   }
 
   // Hide/show nav items based on perms
@@ -1200,7 +1208,7 @@ function lockSelBr(){
   if(CU.role==='branch'){
     selBr=new Set([CU.scope]);
   } else if(CU.role==='supervisor'){
-    selBr=new Set(BR.filter(b=>b.sup===CU.scope).map(b=>b.id));
+    selBr=new Set(getActiveBranches().filter(b=>b.sup===CU.scope).map(b=>b.id));
   }
   // admin: don't touch selBr (user may have custom selection)
 }
@@ -1209,10 +1217,10 @@ let activeBrand='all', activeRegion='all', activeSup='all';
 
 function getFilteredPool(){
   const base = CU.role==='branch'
-    ? BR.filter(b=>b.id===CU.scope)
+    ? getActiveBranches().filter(b=>b.id===CU.scope)
     : CU.role==='supervisor'
-      ? BR.filter(b=>b.sup===CU.scope)
-      : BR;
+      ? getActiveBranches().filter(b=>b.sup===CU.scope)
+      : getActiveBranches();
   return base.filter(b=>{
     if(activeBrand!=='all' && b.brand!==activeBrand) return false;
     if(activeRegion!=='all' && b.region!==activeRegion) return false;
@@ -1620,7 +1628,7 @@ function refresh(scope='all'){
     <div class="kpi p"><div class="kl">เฉลี่ยต่อคัน</div><div class="kv">${avgPerCar!==null?fmt(avgPerCar):'—'}</div><div class="ks neu">ยอดขาย / จำนวนรถ</div></div>
     ${washKpiHtml(workStats)}`;
 
-  const brL=sel.length===BR.length?'ทุกสาขา':sel.length<=2?sel.map(b=>b.id).join(', '):`${sel.length} สาขา`;
+  const brL=sel.length===getActiveBranches().length?'ทุกสาขา':sel.length<=2?sel.map(b=>b.id).join(', '):`${sel.length} สาขา`;
   document.getElementById('ftag').textContent=`${periodLabel} · ${brL}`;
   document.getElementById('db-badge').textContent=periodLabel;
 
@@ -2054,10 +2062,10 @@ function branchMetricValue(b,metric){
   return b._rev;
 }
 function branchMetricStatus(b,metric){
-  if(metric==='labor'||metric==='costPct'||metric==='totalCost') return costStatus(b._costPct,b._totalCost>0);
+  if(metric==='costPct'||metric==='totalCost') return costStatus(b._costPct,b._totalCost>0);
   if(metric==='washAvg') return washStatus(b._washAvg);
-  if(metric==='rev'||metric==='targetPct') return targetStatus(b._targetPct,b._target>0);
-  return {state:'neutral',pass:null,color:'#f59e0b',label:'ไม่มีเกณฑ์ผ่าน/ไม่ผ่าน'};
+  if(metric==='targetPct') return targetStatus(b._targetPct,b._target>0);
+  return {state:'neutral',pass:null,color:'var(--tx3)',label:'ไม่มีสถานะ'};
 }
 function branchMetricText(b,metric){
   if(metric==='labor') return fmt(b._labor);
@@ -2086,6 +2094,14 @@ function sortBranchMetricRows(rows,metric,dir){
     return b._rev-a._rev;
   });
 }
+function metricHasStatus(metric){
+  return metric==='costPct'||metric==='totalCost'||metric==='washAvg'||metric==='targetPct';
+}
+function greenRamp(i,total){
+  const palette=['#16a34a','#22c55e','#34d399','#5eead4','#86efac'];
+  if(total<=1) return palette[1];
+  return palette[Math.min(palette.length-1,Math.round(i*(palette.length-1)/(total-1)))];
+}
 function setBranchTopMode(value){
   branchTopMode=value==='targetPct'?'targetPct':'rev';
   drawBranchChart();
@@ -2094,6 +2110,12 @@ function setBranchListSort(){
   branchListMetric=document.getElementById('branch-list-metric')?.value||'rev';
   branchListDir=document.getElementById('branch-list-dir')?.value||'desc';
   branchListStatus=document.getElementById('branch-list-status')?.value||'all';
+  const statusEl=document.getElementById('branch-list-status');
+  if(!metricHasStatus(branchListMetric)&&branchListStatus!=='all'){
+    branchListStatus='all';
+    if(statusEl) statusEl.value='all';
+  }
+  if(statusEl) statusEl.disabled=!metricHasStatus(branchListMetric);
   renderBranchSortList();
 }
 function drawBranchChart(){
@@ -2101,7 +2123,7 @@ function drawBranchChart(){
   const mode=branchTopMode==='targetPct'?'targetPct':'rev';
   const sorted=sortBranchMetricRows(getBranchMetricRows(),mode,'desc').slice(0,5);
   const values=sorted.map(b=>branchMetricValue(b,mode));
-  const colors=sorted.map(b=>branchMetricStatus(b,mode).color);
+  const colors=sorted.map((_,i)=>greenRamp(i,sorted.length));
   const isPct=mode==='targetPct';
   CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sorted.map(b=>b.id),datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>isPct?v.toFixed(0)+'%':'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sorted[i[0].dataIndex]?.name||'',label:i=>{const b=sorted[i.dataIndex];return isPct?`% ต่อเป้า ${branchMetricText(b,'targetPct')} · ${branchMetricSubText(b,'targetPct')}`:`ยอดขาย ${fmt(b._rev)} · ${branchMetricSubText(b,'rev')}`;}}}}}});
 }
@@ -2109,9 +2131,17 @@ function renderBranchSortList(){
   const el=document.getElementById('branch-sort-list');
   if(!el) return;
   const metric=branchListMetric;
-  const statusFilter=branchListStatus;
+  const statusEl=document.getElementById('branch-list-status');
+  if(statusEl){
+    statusEl.disabled=!metricHasStatus(metric);
+    if(!metricHasStatus(metric)&&branchListStatus!=='all'){
+      branchListStatus='all';
+      statusEl.value='all';
+    }
+  }
+  const statusFilter=metricHasStatus(metric)?branchListStatus:'all';
   let rows=sortBranchMetricRows(getBranchMetricRows(),metric,branchListDir);
-  if(statusFilter!=='all'){
+  if(statusFilter!=='all'&&metricHasStatus(metric)){
     rows=rows.filter(b=>branchMetricStatus(b,metric).state===statusFilter);
   }
   if(!rows.length){
@@ -3123,9 +3153,9 @@ function todayDateKey(){
 }
 function getUploadBranchOptions(){
   if(!CU) return [];
-  if(CU.role==='branch') return BR.filter(b=>String(b.id)===String(CU.scope));
-  if(CU.role==='supervisor') return BR.filter(b=>b.sup===CU.scope);
-  return BR;
+  if(CU.role==='branch') return getActiveBranches().filter(b=>String(b.id)===String(CU.scope));
+  if(CU.role==='supervisor') return getActiveBranches().filter(b=>b.sup===CU.scope);
+  return getActiveBranches();
 }
 function applyUploadRoleVisibility(){
   const showSales=canUploadSales();
@@ -3579,7 +3609,7 @@ function updateRoleFields(u){
   document.getElementById('m-sup-row').style.display=role==='supervisor'?'':'none';
   document.getElementById('m-br-row').style.display=role==='branch'?'':'none';
   if(role==='supervisor'){document.getElementById('msup').innerHTML=SUPS.map(s=>`<option value="${s}" ${u?.scope===s?'selected':''}>${s}</option>`).join('');}
-  if(role==='branch'){document.getElementById('mbr').innerHTML=BR.map(b=>`<option value="${b.id}" ${u?.scope===b.id?'selected':''}>${b.name} (${b.id})</option>`).join('');}
+  if(role==='branch'){document.getElementById('mbr').innerHTML=getActiveBranches().map(b=>`<option value="${b.id}" ${u?.scope===b.id?'selected':''}>${b.name} (${b.id})</option>`).join('');}
   if(!u)buildPermList(PDEF[role]||[]);
 }
 function buildPermList(active){
