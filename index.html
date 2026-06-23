@@ -197,6 +197,8 @@ details.le>summary::-webkit-details-marker{display:none}
 .rtab{padding:3px 11px;border-radius:14px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--tx3);background:none;font-family:inherit;transition:all .13s}
 .rtab.on{border-color:var(--accent);color:var(--accent);background:var(--acl)}
 .rtab:hover:not(.on){border-color:var(--border2);color:var(--tx)}
+.chart-sort-controls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.mini-select{background:var(--c2);border:1px solid var(--border);color:var(--tx2);border-radius:8px;padding:5px 8px;font-size:11px;min-height:28px}
 
 /* cost / progress */
 .cinp{width:100%;background:var(--c0);border:1px solid var(--border);border-radius:5px;color:var(--tx);font-size:11px;padding:3px 6px;text-align:right;outline:none;font-family:'IBM Plex Mono',monospace;transition:border-color .13s}
@@ -245,7 +247,7 @@ details.le>summary::-webkit-details-marker{display:none}
 
 /* cost KPI mini */
 .cost-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px;margin-bottom:11px}
-.work-kpi-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.work-kpi-row{display:grid;grid-template-columns:1fr;gap:9px}
 .ckpi{background:var(--c0);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .ck-lbl{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
 .ck-val{font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace}
@@ -267,6 +269,8 @@ details.le>summary::-webkit-details-marker{display:none}
   .dtbl{min-width:580px}
   #tbl-daily.daily-mobile{min-width:0}
   #tbl-daily.daily-mobile th,#tbl-daily.daily-mobile td{padding:7px 6px;font-size:11px}
+  .chart-sort-controls{width:100%;justify-content:flex-start}
+  .mini-select{flex:1;min-width:130px}
   .lcard{width:92vw;padding:24px 16px}
   #mob-bar{display:flex !important}
   #mob-fab{display:flex !important;z-index:9999 !important;pointer-events:auto !important}
@@ -419,8 +423,14 @@ details.le>summary::-webkit-details-marker{display:none}
 
       <div class="panel" style="margin-bottom:11px" id="work-ov-panel">
         <div class="ph">
-          <span class="pt">ระยะเวลาการทำงาน</span>
-          <span class="pbadge">คำนวณจากคอลัมน์ D → F</span>
+          <span class="pt">ระยะเวลาล้างรถ</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="pbadge">เฉพาะบริการที่มีคำว่า ล้างรถ</span>
+            <label style="font-size:10.5px;color:var(--tx3);display:flex;align-items:center;gap:4px">ผ่าน ≤
+              <input id="wash-time-limit" type="number" min="1" value="60" onchange="setWashTimeLimit(this.value)" style="width:54px;background:var(--c0);border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:3px 5px;font-size:11px">
+              นาที
+            </label>
+          </div>
         </div>
         <div class="work-kpi-row" id="work-ov-kpi"></div>
       </div>
@@ -462,10 +472,18 @@ details.le>summary::-webkit-details-marker{display:none}
       <div class="row r2">
         <div class="panel">
           <div class="ph">
-            <span class="pt">ยอดขายตามสาขา (Top 5)</span>
-            <div style="display:flex;gap:5px">
-              <button class="rtab on" id="btm-rev" onclick="setBranchTop('rev',this)">ยอดขาย</button>
-              <button class="rtab" id="btm-target" onclick="setBranchTop('target',this)">% ต่อเป้า</button>
+            <span class="pt">สาขา Top 5</span>
+            <div class="chart-sort-controls">
+              <select id="branch-sort-metric" class="mini-select" onchange="setBranchSort()">
+                <option value="rev">ยอดขาย</option>
+                <option value="labor">ค่าแรง</option>
+                <option value="costPct">% ต้นทุนขาย</option>
+                <option value="washAvg">เวลาล้างรถ</option>
+              </select>
+              <select id="branch-sort-dir" class="mini-select" onchange="setBranchSort()">
+                <option value="desc">มาก→น้อย</option>
+                <option value="asc">น้อย→มาก</option>
+              </select>
             </div>
           </div>
           <div class="pwrap" style="height:250px"><canvas id="ch-branch" role="img" aria-label="สาขา"></canvas></div>
@@ -875,7 +893,7 @@ function pctLimitColor(pct,limit){
 }
 function laborPctColor(pct){return pctLimitColor(pct,30);}
 function rentPctColor(pct){return pctLimitColor(pct,28);}
-function totalCostPctColor(pct){return pctLimitColor(pct,58);}
+function totalCostPctColor(pct){return pctLimitColor(pct,42);}
 function calcCostPct(rev,cost){
   return rev>0?(cost/rev*100):null;
 }
@@ -885,14 +903,14 @@ function calcMarginPct(rev,cost){
 function pctLabel(pct){
   return pct===null||pct===undefined||!Number.isFinite(pct)?'N/A':pct.toFixed(1)+'%';
 }
-function costColorFor(rev,cost,pct,limit=58){
+function costColorFor(rev,cost,pct,limit=42){
   if(cost>0&&rev<=0) return 'var(--red)';
   if(pct===null||pct===undefined||!Number.isFinite(pct)) return 'var(--tx3)';
   return pct>limit?'var(--red)':'var(--green)';
 }
 function costKpiClassFor(rev,cost,pct){
   if(cost>0&&rev<=0) return 'r';
-  if(cost>0&&pct!==null&&pct>58) return 'r';
+  if(cost>0&&pct!==null&&pct>42) return 'r';
   return 'g';
 }
 function removeBranchState(id){
@@ -949,7 +967,8 @@ let CY=new Date().getFullYear();
 let brandTab='all';
 let brSortKey='rev';let brSortAsc=false;
 let menuOvMode='rev';
-let branchTopMode='rev';
+let branchSortMetric='rev';
+let branchSortDir='desc';
 let brFilteredIds=null; // null = all
 const CH={};
 let DATA_VERSION=0;
@@ -1501,6 +1520,7 @@ function applySup(){
 // ── MAIN REFRESH ──
 let ACTIVE_VIEW='overview';
 let _rf=null,_rfScope='all';
+let washTimeLimit=60;
 function scheduleRefresh(scope='all'){
   _rfScope=scope;
   if(_rf) return;
@@ -1508,6 +1528,14 @@ function scheduleRefresh(scope='all'){
     const sc=_rfScope; _rf=null; _rfScope='all';
     refresh(sc);
   });
+}
+function setWashTimeLimit(value){
+  const n=parseFloat(value);
+  washTimeLimit=Number.isFinite(n)&&n>0?n:60;
+  const inp=document.getElementById('wash-time-limit');
+  if(inp) inp.value=washTimeLimit;
+  refreshOverviewOnly();
+  if(CH.branch) drawBranchChart();
 }
 function workDurationCard(label,stats,color,desc,note=''){
   const count=+stats.count||0;
@@ -1525,14 +1553,18 @@ function workDurationCard(label,stats,color,desc,note=''){
 function renderWorkDurationBox(workStats,totalCars=workStats.count){
   const el=document.getElementById('work-ov-kpi');
   if(!el) return;
-  const doneCars=+totalCars||0;
-  const timedJobs=+workStats.count||0;
-  const missingTime=Math.max(0,doneCars-timedJobs);
-  const totalNote=`${fN(timedJobs)} งานมีเวลา / ${fN(doneCars)} รถเสร็จงาน${missingTime?` · ขาดเวลา ${fN(missingTime)}`:''}`;
+  const wash=workStats.wash||{minutes:0,count:0};
+  const washAvg=wash.count?wash.minutes/wash.count:null;
+  const pass=washAvg!==null&&washAvg<=washTimeLimit;
+  const statusColor=washAvg===null?'var(--tx3)':pass?'var(--green)':'var(--red)';
+  const statusText=washAvg===null?'ยังไม่มีเวลาล้างรถ':pass?'ผ่าน':'เกินเกณฑ์';
   el.innerHTML=`
-    ${workDurationCard('ทั่วไป',workStats.general,'#3b82f6','ไม่มีคำว่า ล้างรถ')}
-    ${workDurationCard('ล้างรถ',workStats.wash,'#14b8a6','บริการมีคำว่า ล้างรถ')}
-    ${workDurationCard('เฉลี่ยรวม',{minutes:workStats.minutes,count:workStats.count},'#a855f7','รวมทุกบริการที่อ่านเวลาได้',totalNote)}
+    <div class="ckpi wash-focus" onclick="showWorkDurationInfo()" title="คลิกดูรายละเอียดเวลาล้างรถ" style="cursor:pointer;border-color:${statusColor};box-shadow:inset 0 2px 0 ${statusColor}">
+      <div class="ck-lbl">เวลาล้างรถเฉลี่ย</div>
+      <div class="ck-val" style="font-size:26px;color:${statusColor}">${fmtDuration(washAvg)}</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:5px">รวม ${wash.count?fN(wash.minutes)+' นาที':'—'} / ${fN(wash.count)} งานที่มีเวลา</div>
+      <div style="font-size:11px;color:${statusColor};margin-top:3px;font-weight:600">${statusText}${washAvg!==null?` · เกณฑ์ ≤ ${fN(washTimeLimit)} นาที`:''}</div>
+    </div>
   `;
 }
 function refresh(scope='all'){
@@ -1596,10 +1628,10 @@ function updateCostOv(sel,tRev,tCost,costPct,gp){
   const marginPct=calcMarginPct(tRev,tCost);
   const laborColor=costColorFor(tRev,labor,laborPct,30);
   const rentColor=costColorFor(tRev,rentService,rentServicePct,28);
-  const totalColor=costColorFor(tRev,tCost,costPct,58);
+  const totalColor=costColorFor(tRev,tCost,costPct,42);
   const profitColor=gp<0?'var(--red)':(hasCost?'var(--green)':'var(--tx3)');
   const marginColor=marginPct<0?'var(--red)':(hasCost?'var(--green)':'var(--tx3)');
-  const isCostBad=hasCost&&(tRev<=0||(costPct!==null&&costPct>58)||gp<0);
+  const isCostBad=hasCost&&(tRev<=0||(costPct!==null&&costPct>42)||gp<0);
 
   document.getElementById('cost-ov-badge').textContent=hasCost?`ต้นทุน ${getCostPeriodLabel()} · ${pctLabel(costPct)} ของยอดขาย`:`ยังไม่กรอกต้นทุน (${getCostPeriodLabel()})`; 
   document.getElementById('cost-ov-badge').style.background=hasCost?(isCostBad?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)'):'';
@@ -1691,7 +1723,7 @@ function renderTarget(tRev,tOrd,tNew){
   }
   const pct=Math.min(tRev/raw*100,999);
   const barPct=Math.min(pct,100).toFixed(1);
-  const bc=pct>=100?'#22c55e':pct>=80?'#f59e0b':'#3b82f6';
+  const bc=pct>=70?'#22c55e':'#ef4444';
   const remain=raw-tRev;
   const forecast=getForecastStats(tRev,sel,raw);
   const forecastPct=forecast.projectedPct;
@@ -1720,9 +1752,9 @@ function renderTarget(tRev,tOrd,tNew){
     const sCost=sb.reduce((s,b)=>s+getBranchCostTotal(b.id),0);
     if(!sRev&&!sTgt&&!sCost) return null;
     const sp=sTgt>0?Math.min(sRev/sTgt*100,999).toFixed(1):0;
-    const sc=sTgt===0?'var(--tx3)':sp>=100?'var(--green)':sp>=80?'var(--amber)':'var(--red)';
+    const sc=sTgt===0?'var(--tx3)':sp>=70?'var(--green)':'var(--red)';
     const costPct=calcCostPct(sRev,sCost);
-    const costColor=sCost>0?costColorFor(sRev,sCost,costPct,58):'var(--tx3)';
+    const costColor=sCost>0?costColorFor(sRev,sCost,costPct,42):'var(--tx3)';
     return{sup,sRev,sTgt,sCost,costPct,costColor,sp,sc,count:sb.length};
   }).filter(g=>g!==null);
 
@@ -1733,7 +1765,7 @@ function renderTarget(tRev,tOrd,tNew){
         <div class="kl">% ต่อเป้า</div>
         <div class="kv" style="font-size:16px;color:${bc}">${pct.toFixed(1)}%</div>
         <div style="font-size:10px;color:var(--tx3);margin-top:2px">เป้า: ${fmt(raw)}</div>
-        <div class="ks ${pct>=100?'up':pct>=80?'neu':'dn'}">${remain>0?'เหลือ '+fmt(remain):'บรรลุเป้าแล้ว'}</div>
+        <div class="ks ${pct>=70?'up':'dn'}">${remain>0?'เหลือ '+fmt(remain):'บรรลุเป้าแล้ว'}</div>
       </div>
       ${tc('เฉลี่ย/สาขา',tRev/(sel.length||1),raw/(sel.length||1),true)}
     </div>
@@ -1768,7 +1800,7 @@ function renderTarget(tRev,tOrd,tNew){
 }
 function tc(lbl,actual,target,isCur,onClick){
   const p=target>0?(actual/target*100).toFixed(1):0;
-  const cls=p>=100?'up':p>=80?'neu':'dn';
+  const cls=p>=70?'up':'dn';
   const clickAttr=onClick?` onclick="${onClick}" title="คลิกดูที่มาของยอดขาย"`:'';
   const cursor=onClick?'cursor:pointer;':'';
   return`<div class="kpi"${clickAttr} style="${cursor}padding:10px 12px"><div class="kl">${lbl}</div><div class="kv" style="font-size:16px">${isCur?fmt(actual):fN(actual)}</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">เป้า: ${isCur?fmt(target):fN(target)}</div><div class="ks ${cls}">${p}%</div></div>`;
@@ -1867,40 +1899,34 @@ function showWorkDurationInfo(){
   const rows=sel.map(b=>{
     const st=getPeriodWorkStats([b]);
     const ord=getPeriodOrd(b.id);
-    const missing=Math.max(0,ord-st.count);
+    const missing=Math.max(0,ord-st.wash.count);
     return {
-      b,minutes:st.minutes,count:st.count,ord,missing,
-      avg:st.count?st.minutes/st.count:null,
-      generalAvg:st.general.count?st.general.minutes/st.general.count:null,
+      b,minutes:st.wash.minutes,count:st.wash.count,ord,missing,
+      avg:st.wash.count?st.wash.minutes/st.wash.count:null,
       washAvg:st.wash.count?st.wash.minutes/st.wash.count:null,
-      generalCount:st.general.count,
       washCount:st.wash.count
     };
-  }).filter(r=>r.count>0||r.ord>0).sort((a,b)=>b.count-a.count||b.ord-a.ord);
+  }).filter(r=>r.count>0).sort((a,b)=>b.avg-a.avg||b.count-a.count);
   const rowHtml=rows.length?rows.map(r=>`
     <div style="display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid rgba(31,48,85,.45)">
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:500">${escHtml(r.b.name)} <span class="mono" style="color:var(--tx3);font-size:10px">${escHtml(r.b.id)}</span></div>
-        <div style="font-size:10.5px;color:var(--tx3)">รถเสร็จงาน ${fN(r.ord)} · อ่านเวลา D→F ได้ ${fN(r.count)}${r.missing?` · ขาดเวลา ${fN(r.missing)}`:''}</div>
+        <div style="font-size:10.5px;color:var(--tx3)">ล้างรถที่มีเวลา ${fN(r.count)} งาน · รวม ${fN(r.minutes)} นาที</div>
       </div>
       <div style="text-align:right">
-        <div class="mono" style="font-size:11.5px;font-weight:600">ทั่วไป ${fmtDuration(r.generalAvg)}</div>
-        <div class="mono" style="font-size:11.5px;font-weight:600">ล้างรถ ${fmtDuration(r.washAvg)}</div>
-        <div style="font-size:10.5px;color:var(--tx3)">รวม ${r.avg!==null?fmtDuration(r.avg):'—'}</div>
+        <div class="mono" style="font-size:12px;font-weight:600">${fmtDuration(r.washAvg)}</div>
+        <div style="font-size:10.5px;color:${r.washAvg!==null&&r.washAvg<=washTimeLimit?'var(--green)':'var(--red)'}">${r.washAvg!==null&&r.washAvg<=washTimeLimit?'ผ่าน':'เกินเกณฑ์'}</div>
       </div>
     </div>`).join(''):'<div style="color:var(--tx3);font-size:12px;padding:10px 0">ยังไม่มีข้อมูลเวลาในช่วงนี้</div>';
   openDetailModal('ที่มาระยะเวลาทำงาน',`
     <div class="alert al-info" style="margin-bottom:12px">
-      <div>ระยะเวลาทำงานเฉลี่ยคิดเฉพาะรถที่ <strong>สถานะใบงาน = เสร็จงาน</strong> โดยใช้ <strong>คอลัมน์ D เวลาเริ่มงาน</strong> ถึง <strong>คอลัมน์ F เวลาเสร็จงาน</strong> แล้วแยกเป็น <strong>ทั่วไป = ไม่มีคำว่า “ล้างรถ”</strong> และ <strong>ล้างรถ = บริการมีคำว่า “ล้างรถ”</strong></div>
+      <div>ระยะเวลาล้างรถคิดเฉพาะใบงานที่ <strong>สถานะใบงาน = เสร็จงาน</strong>, บริการมีคำว่า <strong>“ล้างรถ”</strong> และอ่านเวลา <strong>คอลัมน์ D → F</strong> ได้ครบ</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">
-      <div class="ckpi"><div class="ck-lbl">ทั่วไปเฉลี่ย</div><div class="ck-val">${totalStats.general.count?fmtDuration(totalStats.general.minutes/totalStats.general.count):'—'}</div><div style="font-size:10px;color:var(--tx3);margin-top:3px">${fN(totalStats.general.count)} งาน</div></div>
-      <div class="ckpi"><div class="ck-lbl">ล้างรถเฉลี่ย</div><div class="ck-val">${totalStats.wash.count?fmtDuration(totalStats.wash.minutes/totalStats.wash.count):'—'}</div><div style="font-size:10px;color:var(--tx3);margin-top:3px">${fN(totalStats.wash.count)} งาน</div></div>
-      <div class="ckpi"><div class="ck-lbl">เวลาเฉลี่ยรวม</div><div class="ck-val">${totalStats.count?fmtDuration(totalStats.minutes/totalStats.count):'—'}</div></div>
-      <div class="ckpi"><div class="ck-lbl">เวลารวม</div><div class="ck-val">${totalStats.count?fN(totalStats.minutes)+' นาที':'—'}</div></div>
-      <div class="ckpi"><div class="ck-lbl">อ่านเวลา D→F ได้</div><div class="ck-val">${fN(totalStats.count)}</div></div>
-      <div class="ckpi"><div class="ck-lbl">รถเสร็จงาน</div><div class="ck-val">${fN(totalOrders)}</div></div>
-      <div class="ckpi"><div class="ck-lbl">ขาดเวลา D/F</div><div class="ck-val">${fN(missingTime)}</div></div>
+      <div class="ckpi"><div class="ck-lbl">ล้างรถเฉลี่ย</div><div class="ck-val">${totalStats.wash.count?fmtDuration(totalStats.wash.minutes/totalStats.wash.count):'—'}</div></div>
+      <div class="ckpi"><div class="ck-lbl">เวลาล้างรถรวม</div><div class="ck-val">${totalStats.wash.count?fN(totalStats.wash.minutes)+' นาที':'—'}</div></div>
+      <div class="ckpi"><div class="ck-lbl">จำนวนที่นำมาหาร</div><div class="ck-val">${fN(totalStats.wash.count)}</div></div>
+      <div class="ckpi"><div class="ck-lbl">เกณฑ์ผ่าน</div><div class="ck-val">≤ ${fN(washTimeLimit)} นาที</div></div>
     </div>
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">แยกตามสาขา</div>
     <div style="max-height:330px;overflow:auto">${rowHtml}</div>
@@ -1982,10 +2008,9 @@ function drawDailyChart(){
   }});
 }
 
-function setBranchTop(mode,el){
-  branchTopMode=mode;
-  document.querySelectorAll('#btm-rev,#btm-target').forEach(t=>t.classList.remove('on'));
-  if(el) el.classList.add('on');
+function setBranchSort(){
+  branchSortMetric=document.getElementById('branch-sort-metric')?.value||'rev';
+  branchSortDir=document.getElementById('branch-sort-dir')?.value||'desc';
   drawBranchChart();
 }
 function drawBranchChart(){
@@ -1994,13 +2019,54 @@ function drawBranchChart(){
     const rev=getPeriodRevenue(b.id);
     const target=branchTargets[b.id]||0;
     const targetPct=target>0?(rev/target*100):0;
-    return {...b,_rev:rev,_target:target,_targetPct:targetPct};
-  }).sort((a,b)=>branchTopMode==='target'
-    ? (b._targetPct-a._targetPct)||(b._rev-a._rev)
-    : b._rev-a._rev
-  ).slice(0,5);
-  const values=branchTopMode==='target'?rows.map(b=>+b._targetPct.toFixed(1)):rows.map(b=>b._rev);
-  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:rows.map(b=>b.id),datasets:[{data:values,backgroundColor:rows.map(b=>BC[b.brand]),borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:v=>branchTopMode==='target'?v+'%':'฿'+(v/1000).toFixed(0)+'K'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>rows[i[0].dataIndex]?.name||'',label:i=>{const b=rows[i.dataIndex];return branchTopMode==='target'?`${i.raw}% ต่อเป้า (${fmt(b._rev)} / ${fmt(b._target)})`:fmt(i.raw);}}}}}});
+    const c=COST[b.id]||{labor:0,rent:0,service:0};
+    const totalCost=getBranchCostTotal(b.id);
+    const costPct=calcCostPct(rev,totalCost);
+    const work=getPeriodWorkStats([b]);
+    const washAvg=work.wash.count?work.wash.minutes/work.wash.count:null;
+    return {...b,_rev:rev,_target:target,_targetPct:targetPct,_labor:+c.labor||0,_costPct:costPct,_washAvg:washAvg,_washCount:work.wash.count};
+  });
+  const metric=branchSortMetric;
+  const dir=branchSortDir==='asc'?1:-1;
+  const valueOf=b=>{
+    if(metric==='labor') return b._labor;
+    if(metric==='costPct') return b._costPct||0;
+    if(metric==='washAvg') return b._washAvg||0;
+    return b._rev;
+  };
+  const sorted=rows.sort((a,b)=>{
+    const am=(metric==='costPct'&&a._costPct===null)||(metric==='washAvg'&&a._washAvg===null);
+    const bm=(metric==='costPct'&&b._costPct===null)||(metric==='washAvg'&&b._washAvg===null);
+    if(am!==bm) return am?1:-1;
+    const av=valueOf(a),bv=valueOf(b);
+    if(av!==bv) return (av-bv)*dir;
+    return (b._rev-a._rev);
+  }).slice(0,5);
+  const values=sorted.map(b=>{
+    if(metric==='labor') return b._labor;
+    if(metric==='costPct') return b._costPct===null?0:+b._costPct.toFixed(1);
+    if(metric==='washAvg') return b._washAvg===null?0:+b._washAvg.toFixed(1);
+    return b._rev;
+  });
+  const colors=sorted.map(b=>{
+    if(metric==='rev') return b._target>0?(b._targetPct>=70?'#22c55e':'#ef4444'):(BC[b.brand]||'#3b82f6');
+    if(metric==='costPct') return b._costPct===null?'#45588a':(b._costPct<=42?'#22c55e':'#ef4444');
+    if(metric==='washAvg') return b._washAvg===null?'#45588a':(b._washAvg<=washTimeLimit?'#22c55e':'#ef4444');
+    return '#f59e0b';
+  });
+  const yCb=v=>{
+    if(metric==='costPct') return v+'%';
+    if(metric==='washAvg') return v+' นาที';
+    return '฿'+(v/1000).toFixed(0)+'K';
+  };
+  const tipLabel=i=>{
+    const b=sorted[i.dataIndex];
+    if(metric==='labor') return `ค่าแรง ${fmt(b._labor)} · ยอดขาย ${fmt(b._rev)}`;
+    if(metric==='costPct') return `ต้นทุน ${pctLabel(b._costPct)} · ยอดขาย ${fmt(b._rev)}`;
+    if(metric==='washAvg') return `ล้างรถ ${fmtDuration(b._washAvg)} · ${fN(b._washCount)} งาน`;
+    return `ยอดขาย ${fmt(b._rev)} · เป้า ${fmt(b._target)} · ${b._target>0?b._targetPct.toFixed(1)+'% ต่อเป้า':'ยังไม่ตั้งเป้า'}`;
+  };
+  CH['branch']=new Chart(document.getElementById('ch-branch'),{type:'bar',data:{labels:sorted.map(b=>b.id),datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{...baseO,scales:{x:{...baseO.scales.x,grid:{display:false},ticks:{...baseO.scales.x.ticks,maxRotation:30}},y:{...baseO.scales.y,ticks:{...baseO.scales.y.ticks,callback:yCb}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>sorted[i[0].dataIndex]?.name||'',label:tipLabel}}}}});
 }
 
 function drawBrandChart(){
@@ -2345,10 +2411,10 @@ function renderBranchTable(){
     const costPct=calcCostPct(rev,totalCost);
     const laborColor=laborPctColor(laborPct);
     const rentColor=rentPctColor(rentServicePct);
-    const costColor=totalCost===0?'var(--tx3)':costColorFor(rev,totalCost,costPct,58);
+    const costColor=totalCost===0?'var(--tx3)':costColorFor(rev,totalCost,costPct,42);
     const tgt=branchTargets[b.id]||0;
     const tgtPct=tgt>0?Math.min((rev/tgt*100),999).toFixed(1):0;
-    const tgtColor=tgt===0?'var(--tx3)':tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)';
+    const tgtColor=tgt===0?'var(--tx3)':tgtPct>=70?'var(--green)':'var(--red)';
 
     const laborInp=canEdit
       ?`<div>
@@ -2444,6 +2510,7 @@ function renderBranchTable(){
     updateBranchCostCells(inp.closest('tr'),id);
     // Update overview only — don't re-render table (would lose focus)
     refreshOverviewOnly();
+    if(CH.branch) drawBranchChart();
     updateBrSummary(sel);
     markBranchSaveDirty(id);
   };
@@ -2487,7 +2554,7 @@ function updateBranchCostCells(row,id){
   const costPct=calcCostPct(rev,totalCost);
   const laborColor=laborPctColor(laborPct);
   const rentColor=rentPctColor(rentServicePct);
-  const color=totalCost===0?'var(--tx3)':costColorFor(rev,totalCost,costPct,58);
+  const color=totalCost===0?'var(--tx3)':costColorFor(rev,totalCost,costPct,42);
   const laborPctEl=row.querySelector('.br-labor-pct');
   const rentAmountEl=row.querySelector('.br-rent-amount');
   const rentServicePctEls=row.querySelectorAll('.br-rent-service-pct');
@@ -2550,13 +2617,13 @@ function updateBrSummary(sel){
   const tTgt=sel.reduce((s,b)=>s+(branchTargets[b.id]||0),0);
   const costPct=calcCostPct(tRev,tCost);
   const tgtPct=tTgt>0?(tRev/tTgt*100).toFixed(1):0;
-  const tColor=tCost===0?'var(--tx3)':costColorFor(tRev,tCost,costPct,58);
+  const tColor=tCost===0?'var(--tx3)':costColorFor(tRev,tCost,costPct,42);
   el.innerHTML=`
     <span style="color:var(--tx3)">รวม:</span>
     <span>ยอดขาย <strong class="mono">${fmt(tRev)}</strong></span>
     <span>ต้นทุน (${getCostPeriodLabel()}) <strong class="mono" style="color:${tColor}">${tCost>0?fmt(tCost)+' ('+pctLabel(costPct)+')':'—'}</strong></span>
     <span>เป้า <strong class="mono">${tTgt>0?fmt(tTgt):'—'}</strong></span>
-    ${tTgt>0?`<span style="color:${tgtPct>=100?'var(--green)':tgtPct>=80?'var(--amber)':'var(--red)'}">%เป้า <strong class="mono">${tgtPct}%</strong></span>`:''}`;
+    ${tTgt>0?`<span style="color:${tgtPct>=70?'var(--green)':'var(--red)'}">%เป้า <strong class="mono">${tgtPct}%</strong></span>`:''}`;
 }
 function brCheckChange(id,checked){
   if(checked)selBr.add(id);else selBr.delete(id);
@@ -2805,10 +2872,8 @@ function showPreview(rows,fname,sheetName,detectedBrId){
     if(dur===null) return;
     addWorkDuration(previewWork,dur,isWashServiceText(getField(r,'บริการ')));
   });
-  const avgWork=previewWork.count?previewWork.minutes/previewWork.count:null;
-  const genAvg=previewWork.general.count?previewWork.general.minutes/previewWork.general.count:null;
   const washAvg=previewWork.wash.count?previewWork.wash.minutes/previewWork.wash.count:null;
-  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${avgWork!==null?' · เวลาเฉลี่ยรวม '+fmtDuration(avgWork)+' · ทั่วไป '+fmtDuration(genAvg)+' ('+fN(previewWork.general.count)+' งาน) · ล้างรถ '+fmtDuration(washAvg)+' ('+fN(previewWork.wash.count)+' งาน) · รวม '+fN(previewWork.minutes)+' นาที (D→F '+fN(previewWork.count)+'/'+fN(completed.length)+')':''}`;
+  document.getElementById('imp-stat').textContent=`พบ ${completed.length} รายการสำเร็จ, ${cancelled.length} รายการยกเลิก (ไม่นำเข้า)${previewWork.wash.count?' · ล้างรถ '+fmtDuration(washAvg)+' ('+fN(previewWork.wash.count)+' งาน) · รวม '+fN(previewWork.wash.minutes)+' นาที':''}`;
   const tbody=document.querySelector('#tbl-prev tbody');
   tbody.innerHTML=completed.map((r,i)=>{
     const price=parseMoney(getField(r,'ราคารวม'));
@@ -2962,9 +3027,8 @@ function importData(){
   saveUploadLog(UPLOG[0]); // บันทึกลง Firebase
   renderUpLog();
 
-  const genAvg=workGeneralCount?workGeneralMinutes/workGeneralCount:null;
   const washAvg=workWashCount?workWashMinutes/workWashCount:null;
-  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน) · ลูกค้าใหม่ ${fN(newCustomers)} / เก่า ${fN(oldCustomers)}${workCount?' · เวลาเฉลี่ยรวม '+fmtDuration(workMinutes/workCount)+' · ทั่วไป '+fmtDuration(genAvg)+' ('+fN(workGeneralCount)+' งาน) · ล้างรถ '+fmtDuration(washAvg)+' ('+fN(workWashCount)+' งาน) · รวม '+fN(workMinutes)+' นาที (D→F '+fN(workCount)+'/'+fN(totalCars)+')':''}`;
+  document.getElementById('imp-stat').textContent=`✓ นำเข้าสำเร็จ ${totalCars} คัน ยอด ${fmt(totalRev)} (ปี ${yr}, ${daysFound} วัน) · ลูกค้าใหม่ ${fN(newCustomers)} / เก่า ${fN(oldCustomers)}${workWashCount?' · ล้างรถ '+fmtDuration(washAvg)+' ('+fN(workWashCount)+' งาน) · รวม '+fN(workWashMinutes)+' นาที':''}`;
   PENDING=null;
   setTimeout(()=>{
     document.getElementById('prev-wrap').style.display='none';
@@ -3332,7 +3396,7 @@ function renderUpLog(){
                   <span style="font-size:12.5px;font-weight:500;word-break:break-word">${escHtml(l.name)}</span>
                   <span class="pbadge" style="font-size:9.5px">${logSourceText(l)}</span>
                 </div>
-                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${escHtml(l.branch)} · ${fN(l.cars||0)} คัน · ${fmt(l.rev||0)}${l.workCount?' · เวลาเฉลี่ยรวม '+fmtDuration(l.workMinutes/l.workCount)+' · ทั่วไป '+fmtDuration(l.workGeneralCount?l.workGeneralMinutes/l.workGeneralCount:null)+' · ล้างรถ '+fmtDuration(l.workWashCount?l.workWashMinutes/l.workWashCount:null)+' · รวม '+fN(l.workMinutes)+' นาที (D→F '+fN(l.workCount)+'/'+fN(l.cars||0)+')':''}</div>
+                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${escHtml(l.branch)} · ${fN(l.cars||0)} คัน · ${fmt(l.rev||0)}${l.workWashCount?' · ล้างรถ '+fmtDuration(l.workWashMinutes/l.workWashCount)+' · รวม '+fN(l.workWashMinutes)+' นาที ('+fN(l.workWashCount)+' งาน)':''}</div>
               </div>
               <div class="lt" style="padding-top:1px">${escHtml(l.ts||'')}</div>
               ${canDelete?`<button onclick="deleteUpload(${i})" style="background:none;border:1px solid var(--red);border-radius:6px;color:var(--red);cursor:pointer;font-size:11px;padding:3px 9px;font-family:inherit" onmouseover="this.style.background='var(--red)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='var(--red)'">ลบ</button>`:''}
@@ -4046,34 +4110,4 @@ else usersLoaded=true;
         <option value="bigc">Big C</option><option value="other">อื่นๆ</option>
       </select>
     </div>
-    <div id="mob-region-fl" style="margin-bottom:9px">
-      <label style="display:block;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">ภูมิภาค</label>
-      <select class="fsel" onchange="document.getElementById('fRegion').value=this.value;applyRegion()">
-        <option value="all">ทุกภูมิภาค</option><option value="bkk">กรุงเทพฯ</option>
-        <option value="central_region">ภาคกลาง</option><option value="north">เหนือ</option>
-        <option value="northeast">อีสาน</option><option value="south">ใต้</option><option value="east">ตะวันออก</option>
-      </select>
-    </div>
-    <div id="mob-sup-fl" style="margin-bottom:9px">
-      <label style="display:block;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">ผู้ดูแล</label>
-      <select class="fsel" id="mob-sup-sel" onchange="document.getElementById('fSup').value=this.value;applySup()">
-        <option value="all">ทุกผู้ดูแล</option>
-      </select>
-    </div>
-    <div id="mob-branch-fl" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px">
-        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px">สาขา</label>
-        <span id="mob-branch-count" style="font-size:10.5px;color:var(--tx3)"></span>
-      </div>
-      <div class="bc-ctrl" style="margin-bottom:7px">
-        <button onclick="mobSelectAllBranches()">ทุกสาขาในตัวกรอง</button>
-        <button onclick="mobSelectNoBranches()">ล้าง</button>
-      </div>
-      <div id="mob-branch-list" style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--c0)"></div>
-    </div>
-    <button onclick="mobCloseSheet()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer;margin-top:4px">ปิด</button>
-  </div>
-</div>
-
-</body>
-</html>
+    <div id="mob-region-fl"
