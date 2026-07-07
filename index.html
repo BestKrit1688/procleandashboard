@@ -516,6 +516,32 @@ details.le>summary::-webkit-details-marker{display:none}
 
     <!-- ═══ RANKING ═══ -->
     <div id="v-ranking" class="view">
+      <div class="panel" style="margin-bottom:11px" id="export-report-panel">
+        <div class="ph">
+          <span class="pt">Export รายงาน</span>
+          <span class="pbadge" id="export-report-period">ตามช่วงเวลาที่เลือก</span>
+        </div>
+        <div class="frow" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:9px;align-items:end">
+          <div class="fg">
+            <label>รูปแบบข้อมูล</label>
+            <select id="export-scope-type" onchange="updateExportScopeOptions()">
+              <option value="all">ทุกสาขา</option>
+              <option value="branch">รายสาขา</option>
+              <option value="sup">รายผู้ดูแล</option>
+              <option value="brand">รายกลุ่มห้าง</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>เลือกข้อมูล</label>
+            <select id="export-scope-value"></select>
+          </div>
+          <div class="fg">
+            <label>ไฟล์รายงาน</label>
+            <button class="btn btn-green" type="button" style="width:100%;justify-content:center;padding:8px 12px" onclick="exportBranchReport()">Export Excel</button>
+          </div>
+        </div>
+        <div id="export-report-msg" style="font-size:12px;color:var(--tx3);min-height:16px"></div>
+      </div>
       <div class="panel" style="margin-bottom:11px" id="branch-sort-panel">
         <div class="ph">
           <span class="pt">จัดเรียงสาขาทั้งหมด</span>
@@ -632,6 +658,37 @@ details.le>summary::-webkit-details-marker{display:none}
           <span id="finp-name" style="font-size:12px;color:var(--tx3)">ยังไม่ได้เลือกไฟล์</span>
         </div>
       </div>
+      <div class="panel" id="staff-count-panel" style="margin-bottom:11px">
+        <div class="ph"><span class="pt">จำนวนพนักงาน</span><span class="pbadge">คำนวณค่าแรงรายวัน / รายเดือน</span></div>
+        <div class="frow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;align-items:end">
+          <div class="fg"><label>สาขา</label><select id="staff-br" onchange="loadStaffForm()"></select></div>
+          <div class="fg"><label>เดือน</label><select id="staff-month" onchange="loadStaffForm()">
+            <option value="1">ม.ค.</option><option value="2">ก.พ.</option><option value="3">มี.ค.</option>
+            <option value="4">เม.ย.</option><option value="5">พ.ค.</option><option value="6">มิ.ย.</option>
+            <option value="7">ก.ค.</option><option value="8">ส.ค.</option><option value="9">ก.ย.</option>
+            <option value="10">ต.ค.</option><option value="11">พ.ย.</option><option value="12">ธ.ค.</option>
+          </select></div>
+          <div class="fg"><label>ปี</label><select id="staff-year" onchange="loadStaffForm()">
+            <option value="2026">2026</option><option value="2025">2025</option><option value="2027">2027</option>
+          </select></div>
+        </div>
+        <div class="tw" style="max-height:320px;margin-top:8px">
+          <table class="dtbl" id="staff-table">
+            <thead><tr><th>ตำแหน่ง</th><th>ค่าแรง/วัน</th><th>จำนวนคน</th><th>รวม/วัน</th></tr></thead>
+            <tbody id="staff-tbody"></tbody>
+          </table>
+        </div>
+        <div class="cost-kpi-row" style="margin-top:10px;margin-bottom:8px">
+          <div class="ckpi"><div class="ck-lbl">รวมคน</div><div class="ck-val" id="staff-total-head">0</div></div>
+          <div class="ckpi"><div class="ck-lbl">รวมค่าแรง/วัน</div><div class="ck-val" id="staff-total-day">฿0</div></div>
+          <div class="ckpi"><div class="ck-lbl">จำนวนวันในเดือน</div><div class="ck-val" id="staff-days">0</div></div>
+          <div class="ckpi"><div class="ck-lbl">รวมค่าแรง/เดือน</div><div class="ck-val" id="staff-total-month">฿0</div></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-accent btn-sm" onclick="saveStaffForm()">บันทึกจำนวนพนักงาน</button>
+          <span id="staff-msg" style="font-size:12px;color:var(--tx3);min-height:16px"></span>
+        </div>
+      </div>
       <div class="panel" id="cost-upload-panel" style="display:none;margin-bottom:11px">
         <div class="ph"><span class="pt">อัปโหลดต้นทุน</span><span class="pbadge">เงินเดือน / ค่าคอม / ต้นทุนขาย</span></div>
         <div class="alert al-info" style="margin-bottom:10px">
@@ -650,6 +707,40 @@ details.le>summary::-webkit-details-marker{display:none}
           <span id="cost-finp-name" style="font-size:12px;color:var(--tx3)">ยังไม่ได้เลือกไฟล์</span>
         </div>
         <div id="cost-upload-msg" class="alert al-info" style="display:none;margin-top:10px;margin-bottom:0"></div>
+      </div>
+      <div class="panel" id="target-upload-panel" style="display:none;margin-bottom:11px">
+        <div class="ph"><span class="pt">อัปโหลดเป้าสาขา</span><span class="pbadge">ใช้ช่อง “ใช้จริง”</span></div>
+        <div class="alert al-info" style="margin-bottom:10px">
+          <div>เลือกเดือนของเป้า แล้วอัปโหลด Excel · ระบบจะจับชื่อ/รหัสสาขา และดึงตัวเลขจากหัวข้อ <strong>ใช้จริง</strong> ไปใส่เป้าของสาขาอัตโนมัติ</div>
+        </div>
+        <div class="frow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;align-items:end">
+          <div class="fg">
+            <label>เดือนเป้า</label>
+            <select id="target-upload-month">
+              <option value="1">ม.ค.</option><option value="2">ก.พ.</option><option value="3">มี.ค.</option>
+              <option value="4">เม.ย.</option><option value="5">พ.ค.</option><option value="6">มิ.ย.</option>
+              <option value="7">ก.ค.</option><option value="8">ส.ค.</option><option value="9">ก.ย.</option>
+              <option value="10">ต.ค.</option><option value="11">พ.ย.</option><option value="12">ธ.ค.</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>ปี</label>
+            <select id="target-upload-year">
+              <option value="2026">2026</option><option value="2025">2025</option><option value="2027">2027</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>ไฟล์เป้า</label>
+            <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 12px;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit">
+              เลือกไฟล์เป้า
+              <input type="file" id="target-finp" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="handleTargetFile(this.files[0])" style="display:none">
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+          <span id="target-finp-name" style="font-size:12px;color:var(--tx3)">ยังไม่ได้เลือกไฟล์</span>
+        </div>
+        <div id="target-upload-msg" class="alert al-info" style="display:none;margin-top:10px;margin-bottom:0"></div>
       </div>
       <div class="panel" id="online-sale-panel" style="margin-bottom:11px">
         <div class="ph"><span class="pt">กรอกยอดขายออนไลน์</span><span class="pbadge">ออนไลน์</span></div>
@@ -894,8 +985,17 @@ const branchMonthlyCosts={}; // {brId: {'YYYY_MM': {labor,rent,service}}}
 const branchTargets={};
 BR.forEach(b=>{branchTargets[b.id]=0;});
 const branchMonthlyTargets={}; // เก็บเป้าแยกปี+เดือน เช่น {cla: {'2026_04': 500000}}
+const branchMonthlyStaffing={}; // {brId:{'YYYY_MM':{counts,dailyTotal,monthlyTotal,days}}}
 const RENT_RULE={}; // {brId:{type:'manual'|'minimum'|'fixed',min,fixed,rate}}
 BR.forEach(b=>{RENT_RULE[b.id]={type:'manual',min:0,fixed:0,rate:28};});
+const STAFF_ROLES=[
+  {key:'manager',label:'ผู้จัดการ',rate:500},
+  {key:'sa',label:'SA',rate:466},
+  {key:'headTech',label:'หัวหน้าช่าง',rate:466},
+  {key:'tech',label:'ช่าง',rate:433},
+  {key:'employee',label:'พนักงาน',rate:400},
+  {key:'disabled',label:'คนพิการ',rate:0}
+];
 
 function ensureBranchState(b){
   if(!b||!b.id) return;
@@ -952,7 +1052,7 @@ function washStatus(avg){
   return {state:pass?'pass':'fail',pass,color:pass?'var(--green)':'var(--red)',label:pass?'ผ่าน':'เกินเกณฑ์'};
 }
 function removeBranchState(id){
-  delete DATA[id]; delete COST[id]; delete branchTargets[id]; delete branchMonthlyCosts[id]; delete branchMonthlyTargets[id]; delete RENT_RULE[id];
+  delete DATA[id]; delete COST[id]; delete branchTargets[id]; delete branchMonthlyCosts[id]; delete branchMonthlyTargets[id]; delete branchMonthlyStaffing[id]; delete RENT_RULE[id];
   Object.keys(DAILY_EXTRA).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_EXTRA[k];});
   Object.keys(DAILY_CARS).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_CARS[k];});
   Object.keys(DAILY_RENT_BASE).forEach(k=>{if(k.endsWith(`_${id}`)) delete DAILY_RENT_BASE[k];});
@@ -991,6 +1091,7 @@ function normalizeUser(u){
 }
 function canUploadSales(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='branch');}
 function canUploadCost(){return CU&&(CU.role==='admin'||CU.role==='cost_uploader');}
+function canUploadTarget(){return canEditBranch();}
 function canUpload(){return canUploadSales();}
 function canEditBranch(){return CU&&(CU.role==='admin'||CU.role==='supervisor');}
 function canManageUsers(){return CU&&CU.role==='admin';}
@@ -1315,6 +1416,8 @@ function applyPeriod(){
   }
   loadTargetForPeriod(); // โหลดเป้าของเดือน/ปีที่เลือก
   loadCostForPeriod();
+  if(typeof ACTIVE_VIEW!=='undefined'&&ACTIVE_VIEW==='upload') syncTargetUploadPeriod();
+  if(typeof ACTIVE_VIEW!=='undefined'&&ACTIVE_VIEW==='upload'){syncStaffPeriod();loadStaffForm();}
   scheduleRefresh(ACTIVE_VIEW==='overview'?'overview':'light');
 }
 function getCostPeriodLabel(){
@@ -2130,6 +2233,8 @@ function drawBranchChart(){
 function renderBranchSortList(){
   const el=document.getElementById('branch-sort-list');
   if(!el) return;
+  const periodEl=document.getElementById('export-report-period');
+  if(periodEl) periodEl.textContent=periodLabel||'ตามช่วงเวลาที่เลือก';
   const metric=branchListMetric;
   const statusEl=document.getElementById('branch-list-status');
   if(statusEl){
@@ -2176,6 +2281,129 @@ function renderBranchSortList(){
       <td class="${cls}">${st.label}</td>
     </tr>`;
   }).join('')}</tbody></table>`;
+}
+
+function getReportBaseBranches(){
+  if(CU?.role==='branch') return getActiveBranches().filter(b=>String(b.id)===String(CU.scope));
+  if(CU?.role==='supervisor') return getActiveBranches().filter(b=>b.sup===CU.scope);
+  return getActiveBranches();
+}
+function updateExportScopeOptions(){
+  const type=document.getElementById('export-scope-type')?.value||'all';
+  const valueEl=document.getElementById('export-scope-value');
+  if(!valueEl) return;
+  const branches=getReportBaseBranches();
+  if(type==='all'){
+    valueEl.innerHTML='<option value="all">ทุกสาขา</option>';
+    valueEl.disabled=true;
+  }else if(type==='branch'){
+    valueEl.innerHTML=branches
+      .sort((a,b)=>a.name.localeCompare(b.name,'th'))
+      .map(b=>`<option value="${escHtml(b.id)}">${escHtml(b.name)} (${escHtml(b.id)})</option>`).join('');
+    valueEl.disabled=false;
+  }else if(type==='sup'){
+    const sups=[...new Set(branches.map(b=>b.sup).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+    valueEl.innerHTML=sups.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
+    valueEl.disabled=sups.length<=1;
+  }else{
+    const brands=[...new Set(branches.map(b=>b.brand).filter(Boolean))];
+    valueEl.innerHTML=brands
+      .sort((a,b)=>(BL[a]||a).localeCompare(BL[b]||b,'th'))
+      .map(brand=>`<option value="${escHtml(brand)}">${escHtml(BL[brand]||brand)}</option>`).join('');
+    valueEl.disabled=brands.length<=1;
+  }
+}
+function getExportBranches(){
+  const type=document.getElementById('export-scope-type')?.value||'all';
+  const value=document.getElementById('export-scope-value')?.value||'all';
+  let branches=getReportBaseBranches();
+  if(type==='branch') branches=branches.filter(b=>b.id===value);
+  else if(type==='sup') branches=branches.filter(b=>b.sup===value);
+  else if(type==='brand') branches=branches.filter(b=>b.brand===value);
+  return branches.sort((a,b)=>a.name.localeCompare(b.name,'th'));
+}
+function getExportScopeLabel(){
+  const type=document.getElementById('export-scope-type')?.value||'all';
+  const value=document.getElementById('export-scope-value')?.value||'all';
+  if(type==='branch') return BR.find(b=>b.id===value)?.name||value;
+  if(type==='sup') return value||'ผู้ดูแล';
+  if(type==='brand') return BL[value]||value||'กลุ่มห้าง';
+  return 'ทุกสาขา';
+}
+function reportPct(amount,rev){
+  return rev>0?amount/rev:0;
+}
+function buildBranchReportRows(branches){
+  return branches.map(b=>{
+    syncFormulaRentForBranch(b.id);
+    const revenue=getPeriodRevenue(b.id);
+    const target=branchTargets[b.id]||0;
+    const c=COST[b.id]||{labor:0,rent:0,service:0};
+    const labor=+c.labor||0;
+    const rent=+c.rent||0;
+    const service=+c.service||0;
+    const totalCost=labor+rent+service;
+    const profit=revenue-totalCost;
+    return {
+      'รายชื่อสาขา':b.name,
+      'Code':b.id,
+      'ผู้ดูแล':b.sup,
+      'กลุ่มห้าง':BL[b.brand]||b.brand,
+      'เป้า':target,
+      'ยอดขาย':revenue,
+      'ค่าเช่า':rent,
+      'ค่าเช่า % ของรายได้':reportPct(rent,revenue),
+      'ค่าแรง':labor,
+      'ค่าแรง % ของรายได้':reportPct(labor,revenue),
+      'ต้นทุนขาย/ค่าบริการ':service,
+      'รวมต้นทุน':totalCost,
+      'กำไร':profit,
+      'กำไร %':reportPct(profit,revenue)
+    };
+  });
+}
+function exportBranchReport(){
+  const msg=document.getElementById('export-report-msg');
+  const branches=getExportBranches();
+  if(!branches.length){
+    if(msg) msg.textContent='ไม่พบสาขาสำหรับ Export';
+    return;
+  }
+  const rows=buildBranchReportRows(branches);
+  const totals=rows.reduce((acc,r)=>{
+    acc['เป้า']+=r['เป้า'];
+    acc['ยอดขาย']+=r['ยอดขาย'];
+    acc['ค่าเช่า']+=r['ค่าเช่า'];
+    acc['ค่าแรง']+=r['ค่าแรง'];
+    acc['ต้นทุนขาย/ค่าบริการ']+=r['ต้นทุนขาย/ค่าบริการ'];
+    acc['รวมต้นทุน']+=r['รวมต้นทุน'];
+    acc['กำไร']+=r['กำไร'];
+    return acc;
+  },{'รายชื่อสาขา':'รวม','Code':'','ผู้ดูแล':'','กลุ่มห้าง':'','เป้า':0,'ยอดขาย':0,'ค่าเช่า':0,'ค่าแรง':0,'ต้นทุนขาย/ค่าบริการ':0,'รวมต้นทุน':0,'กำไร':0});
+  totals['ค่าเช่า % ของรายได้']=reportPct(totals['ค่าเช่า'],totals['ยอดขาย']);
+  totals['ค่าแรง % ของรายได้']=reportPct(totals['ค่าแรง'],totals['ยอดขาย']);
+  totals['กำไร %']=reportPct(totals['กำไร'],totals['ยอดขาย']);
+  const exportRows=[...rows,totals];
+  const ws=XLSX.utils.json_to_sheet(exportRows);
+  const headers=Object.keys(exportRows[0]);
+  ws['!cols']=headers.map(h=>({wch:Math.max(12,String(h).length+4)}));
+  const moneyCols=['เป้า','ยอดขาย','ค่าเช่า','ค่าแรง','ต้นทุนขาย/ค่าบริการ','รวมต้นทุน','กำไร'];
+  const pctCols=['ค่าเช่า % ของรายได้','ค่าแรง % ของรายได้','กำไร %'];
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let r=1;r<=range.e.r;r++){
+    headers.forEach((h,c)=>{
+      const addr=XLSX.utils.encode_cell({r,c});
+      if(!ws[addr]) return;
+      if(moneyCols.includes(h)) ws[addr].z='#,##0';
+      if(pctCols.includes(h)) ws[addr].z='0.0%';
+    });
+  }
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'รายงานสาขา');
+  const safeScope=getExportScopeLabel().replace(/[\\/:*?"<>|]/g,'_');
+  const fileName=`Proclean_Report_${safeScope}_${periodLabel.replace(/\s+/g,'_')}.xlsx`;
+  XLSX.writeFile(wb,fileName);
+  if(msg) msg.textContent=`Export แล้ว: ${fileName} (${fN(rows.length)} สาขา)`;
 }
 
 function drawBrandChart(){
@@ -3157,9 +3385,49 @@ function getUploadBranchOptions(){
   if(CU.role==='supervisor') return getActiveBranches().filter(b=>b.sup===CU.scope);
   return getActiveBranches();
 }
+function getStaffPeriod(){
+  const m=Math.max(1,Math.min(12,parseInt(document.getElementById('staff-month')?.value)||parseInt(document.getElementById('dp-m')?.value)||new Date().getMonth()+1));
+  const y=parseInt(document.getElementById('staff-year')?.value)||parseInt(document.getElementById('dp-y')?.value)||new Date().getFullYear();
+  return {month:m,year:y,key:`${y}_${String(m).padStart(2,'0')}`,days:new Date(y,m,0).getDate()};
+}
+function syncStaffPeriod(){
+  const m=document.getElementById('dp-m')?.value||String(new Date().getMonth()+1);
+  const y=document.getElementById('dp-y')?.value||String(new Date().getFullYear());
+  const sm=document.getElementById('staff-month');
+  const sy=document.getElementById('staff-year');
+  if(sm) sm.value=String(parseInt(m)||1);
+  if(sy){
+    if(!Array.from(sy.options).some(o=>String(o.value)===String(y))){
+      sy.insertAdjacentHTML('beforeend',`<option value="${escHtml(y)}">${escHtml(y)}</option>`);
+    }
+    sy.value=String(y);
+  }
+}
+function renderStaffBranchOptions(){
+  const el=document.getElementById('staff-br');
+  if(!el) return;
+  const cur=el.value;
+  const options=getUploadBranchOptions();
+  el.innerHTML=options.map(b=>`<option value="${escHtml(b.id)}">${escHtml(b.name)} (${escHtml(b.id)})</option>`).join('');
+  if(cur&&options.some(b=>String(b.id)===String(cur))) el.value=cur;
+}
+function syncTargetUploadPeriod(){
+  const m=document.getElementById('dp-m')?.value||String(new Date().getMonth()+1);
+  const y=document.getElementById('dp-y')?.value||String(new Date().getFullYear());
+  const tm=document.getElementById('target-upload-month');
+  const ty=document.getElementById('target-upload-year');
+  if(tm) tm.value=String(parseInt(m)||1);
+  if(ty){
+    if(!Array.from(ty.options).some(o=>String(o.value)===String(y))){
+      ty.insertAdjacentHTML('beforeend',`<option value="${escHtml(y)}">${escHtml(y)}</option>`);
+    }
+    ty.value=String(y);
+  }
+}
 function applyUploadRoleVisibility(){
   const showSales=canUploadSales();
   const showCost=canUploadCost();
+  const showTarget=canUploadTarget();
   ['sales-upload-help','sales-upload-panel','online-sale-panel','sales-upload-history'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.style.display=showSales?'':'none';
@@ -3168,6 +3436,103 @@ function applyUploadRoleVisibility(){
   if(prev&&!showSales) prev.style.display='none';
   const costPanel=document.getElementById('cost-upload-panel');
   if(costPanel) costPanel.style.display=showCost?'':'none';
+  const targetPanel=document.getElementById('target-upload-panel');
+  if(targetPanel) targetPanel.style.display=showTarget?'':'none';
+  if(showTarget) syncTargetUploadPeriod();
+  const staffPanel=document.getElementById('staff-count-panel');
+  if(staffPanel) staffPanel.style.display=showSales?'':'none';
+  if(showSales){syncStaffPeriod();renderStaffBranchOptions();renderStaffTable();loadStaffForm();}
+}
+function emptyStaffCounts(){
+  return STAFF_ROLES.reduce((acc,r)=>{acc[r.key]=0;return acc;},{});
+}
+function getStaffCountsFromForm(){
+  const out=emptyStaffCounts();
+  STAFF_ROLES.forEach(role=>{
+    const el=document.querySelector(`.staff-count[data-key="${role.key}"]`);
+    out[role.key]=Math.max(0,Math.floor(parseFloat(el?.value)||0));
+  });
+  return out;
+}
+function calcStaffTotals(counts,days=getStaffPeriod().days){
+  const dailyTotal=STAFF_ROLES.reduce((s,r)=>s+(Math.max(0,+counts?.[r.key]||0)*r.rate),0);
+  const totalHeads=STAFF_ROLES.reduce((s,r)=>s+Math.max(0,+counts?.[r.key]||0),0);
+  return {totalHeads,dailyTotal,days,monthlyTotal:dailyTotal*days};
+}
+function renderStaffTable(){
+  const tbody=document.getElementById('staff-tbody');
+  if(!tbody) return;
+  tbody.innerHTML=STAFF_ROLES.map(role=>`
+    <tr>
+      <td style="font-size:12px;font-weight:500">${role.label}</td>
+      <td class="mono">${role.rate>0?fmt(role.rate):'ไม่มีค่าแรง'}</td>
+      <td><input class="cinp staff-count" data-key="${role.key}" type="number" min="0" step="1" value="0" style="width:90px" oninput="updateStaffTotals()"></td>
+      <td class="mono staff-row-total" data-key="${role.key}">฿0</td>
+    </tr>`).join('');
+  updateStaffTotals();
+}
+function setStaffFormCounts(counts={}){
+  STAFF_ROLES.forEach(role=>{
+    const el=document.querySelector(`.staff-count[data-key="${role.key}"]`);
+    if(el) el.value=Math.max(0,Math.floor(parseFloat(counts[role.key])||0));
+  });
+  updateStaffTotals();
+}
+function updateStaffTotals(){
+  const counts=getStaffCountsFromForm();
+  const period=getStaffPeriod();
+  const totals=calcStaffTotals(counts,period.days);
+  STAFF_ROLES.forEach(role=>{
+    const el=document.querySelector(`.staff-row-total[data-key="${role.key}"]`);
+    if(el) el.textContent=fmt((+counts[role.key]||0)*role.rate);
+  });
+  const headEl=document.getElementById('staff-total-head');
+  const dayEl=document.getElementById('staff-total-day');
+  const daysEl=document.getElementById('staff-days');
+  const monthEl=document.getElementById('staff-total-month');
+  if(headEl) headEl.textContent=fN(totals.totalHeads);
+  if(dayEl) dayEl.textContent=fmt(totals.dailyTotal);
+  if(daysEl) daysEl.textContent=fN(totals.days);
+  if(monthEl) monthEl.textContent=fmt(totals.monthlyTotal);
+  return {counts,period,totals};
+}
+function loadStaffForm(){
+  if(!document.getElementById('staff-tbody')?.children.length) renderStaffTable();
+  const brId=document.getElementById('staff-br')?.value;
+  const period=getStaffPeriod();
+  const saved=branchMonthlyStaffing[brId]?.[period.key];
+  setStaffFormCounts(saved?.counts||{});
+  const msg=document.getElementById('staff-msg');
+  if(msg){msg.style.color='var(--tx3)';msg.textContent=saved?`โหลดข้อมูลเดิมของ ${period.key}`:'';}
+}
+async function saveStaffForm(){
+  const msg=document.getElementById('staff-msg');
+  const brId=document.getElementById('staff-br')?.value;
+  if(!brId){if(msg)msg.textContent='กรุณาเลือกสาขา';return;}
+  const allowed=getUploadBranchOptions().some(b=>String(b.id)===String(brId));
+  if(!allowed){if(msg){msg.style.color='var(--red)';msg.textContent='สิทธิ์ไม่อนุญาตสำหรับสาขานี้';}return;}
+  const {counts,period,totals}=updateStaffTotals();
+  if(!branchMonthlyStaffing[brId]) branchMonthlyStaffing[brId]={};
+  branchMonthlyStaffing[brId][period.key]={
+    counts,
+    days:totals.days,
+    dailyTotal:totals.dailyTotal,
+    monthlyTotal:totals.monthlyTotal,
+    updatedAt:new Date().toISOString(),
+    by:CU?.username||''
+  };
+  if(msg){msg.style.color='var(--tx3)';msg.textContent='กำลังบันทึก...';}
+  try{
+    if(db){
+      const ref=db.collection('branch_data').doc(brId);
+      await ref.set({updatedAt:new Date().toISOString()},{merge:true});
+      await ref.update({[`staffing.${period.key}`]:branchMonthlyStaffing[brId][period.key]});
+    }
+    if(msg){msg.style.color='var(--green)';msg.textContent=`บันทึกแล้ว · รวม/วัน ${fmt(totals.dailyTotal)} · รวม/เดือน ${fmt(totals.monthlyTotal)}`;}
+  }catch(e){
+    console.error('saveStaffForm:',e);
+    if(msg){msg.style.color='var(--red)';msg.textContent='บันทึกไม่ได้: '+e.message;}
+  }
 }
 function renderOnlineBranchOptions(){
   const sel=document.getElementById('online-br');
@@ -3428,6 +3793,176 @@ async function handleCostFile(file){
   reader.readAsArrayBuffer(file);
 }
 
+function getTargetUploadPeriod(){
+  const m=Math.max(1,Math.min(12,parseInt(document.getElementById('target-upload-month')?.value)||1));
+  const y=parseInt(document.getElementById('target-upload-year')?.value)||new Date().getFullYear();
+  const key=`${y}_${String(m).padStart(2,'0')}`;
+  const mN=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return {month:m,year:y,key,label:`${mN[m-1]} ${y}`};
+}
+function targetCellValue(ws,r,c){
+  const cell=ws[XLSX.utils.encode_cell({r,c})];
+  if(!cell) return '';
+  return cell.w!==undefined?cell.w:cell.v;
+}
+function cellFillRgb(cell){
+  const fill=cell?.s?.fill||{};
+  const fg=fill.fgColor||fill.bgColor||{};
+  return String(fg.rgb||fg.argb||'').replace(/^FF/i,'').toUpperCase();
+}
+function isBlueTargetCell(cell){
+  const rgb=cellFillRgb(cell);
+  if(!/^[0-9A-F]{6}$/.test(rgb)) return false;
+  const r=parseInt(rgb.slice(0,2),16),g=parseInt(rgb.slice(2,4),16),b=parseInt(rgb.slice(4,6),16);
+  return b>=130&&b>=r+25&&g>=r+10;
+}
+function isActualTargetLabel(v){
+  const n=normHeader(v);
+  return n.includes('ใช้จริง')||n.includes('ใชจริง')||n.includes('actual');
+}
+function branchFromValues(values){
+  for(const v of values){
+    const id=detectBranchFromText(v);
+    if(id&&!isExcludedBranch(id)) return id;
+  }
+  return null;
+}
+function branchFromAbove(matrix,r,c){
+  for(let rr=r-1;rr>=Math.max(0,r-8);rr--){
+    const row=matrix[rr]||[];
+    const id=branchFromValues([row[c],row[c-1],row[c+1]]);
+    if(id) return id;
+  }
+  return null;
+}
+function addTargetCandidate(list,id,amount,score,source){
+  const brId=canonBrId(id);
+  if(!brId||isExcludedBranch(brId)||!(amount>0)) return;
+  list.push({id:brId,amount,score,source});
+}
+function parseTargetWorkbook(wb){
+  const candidates=[];
+  const skipped=[];
+  let actualHeaders=0;
+  wb.SheetNames.forEach(sheetName=>{
+    const ws=wb.Sheets[sheetName];
+    const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    const sheetBranchId=detectBranchFromText(sheetName);
+    const actualCells=[];
+    matrix.forEach((row,r)=>{
+      (row||[]).forEach((value,c)=>{
+        if(isActualTargetLabel(value)){
+          const cell=ws[XLSX.utils.encode_cell({r,c})];
+          actualCells.push({r,c,blue:isBlueTargetCell(cell)});
+        }
+      });
+    });
+    actualHeaders+=actualCells.length;
+    if(!actualCells.length){
+      skipped.push(`${sheetName}: ไม่พบช่อง "ใช้จริง"`);
+      return;
+    }
+    actualCells.forEach(h=>{
+      const baseScore=h.blue?6:4;
+      // Case 1: "ใช้จริง" is a column header; branch name/code is on each row.
+      for(let r=h.r+1;r<matrix.length;r++){
+        const row=matrix[r]||[];
+        const amount=parseMoney(row[h.c]);
+        if(!(amount>0)) continue;
+        const brId=branchFromValues([...row.slice(0,h.c),...row.slice(h.c+1)]);
+        if(brId) addTargetCandidate(candidates,brId,amount,baseScore,`${sheetName} R${r+1}C${h.c+1}`);
+      }
+      // Case 2: "ใช้จริง" is a row label; branch is in the column header above.
+      const row=matrix[h.r]||[];
+      for(let c=h.c+1;c<row.length;c++){
+        const amount=parseMoney(row[c]);
+        if(!(amount>0)) continue;
+        const brId=branchFromAbove(matrix,h.r,c)||sheetBranchId;
+        if(brId) addTargetCandidate(candidates,brId,amount,baseScore+1,`${sheetName} R${h.r+1}C${c+1}`);
+      }
+      // Case 3: branch name is the sheet name and amount is near the "ใช้จริง" label.
+      if(sheetBranchId&&!isExcludedBranch(sheetBranchId)){
+        for(let c=h.c+1;c<=Math.min(row.length-1,h.c+4);c++){
+          const amount=parseMoney(row[c]);
+          if(amount>0) addTargetCandidate(candidates,sheetBranchId,amount,baseScore+2,`${sheetName} R${h.r+1}C${c+1}`);
+        }
+        for(let r=h.r+1;r<=Math.min(matrix.length-1,h.r+4);r++){
+          const amount=parseMoney(matrix[r]?.[h.c]);
+          if(amount>0) addTargetCandidate(candidates,sheetBranchId,amount,baseScore+1,`${sheetName} R${r+1}C${h.c+1}`);
+        }
+      }
+    });
+  });
+  const targets={};
+  const sources={};
+  candidates.forEach(c=>{
+    const prev=sources[c.id];
+    if(!prev||c.score>prev.score||(c.score===prev.score&&c.amount>prev.amount)){
+      targets[c.id]=Math.round(c.amount);
+      sources[c.id]=c;
+    }
+  });
+  return {targets,sources,skipped,actualHeaders,candidateCount:candidates.length};
+}
+async function saveUploadedTargetForBranch(id,period,target,fileName){
+  const value=Math.round(+target||0);
+  if(!branchMonthlyTargets[id]) branchMonthlyTargets[id]={};
+  branchMonthlyTargets[id][period.key]=value;
+  if(getSelectedMonthPeriod().key===period.key) branchTargets[id]=value;
+  if(db){
+    const ref=db.collection('branch_data').doc(id);
+    await ref.set({
+      updatedAt:new Date().toISOString(),
+      targetUploadAt:new Date().toISOString(),
+      lastTargetUpload:{fileName,period:period.key,by:CU?.username||''}
+    },{merge:true});
+    await ref.update({[`targets.${period.key}`]:value});
+  }
+}
+async function handleTargetFile(file){
+  if(!file) return;
+  const nameEl=document.getElementById('target-finp-name');
+  const msg=document.getElementById('target-upload-msg');
+  if(nameEl) nameEl.textContent=file.name;
+  if(msg){msg.style.display='flex';msg.className='alert al-info';msg.textContent='กำลังอ่านไฟล์เป้า...';}
+  if(!canUploadTarget()){
+    if(msg){msg.className='alert al-err';msg.textContent='สิทธิ์นี้อัปโหลดเป้าไม่ได้';}
+    return;
+  }
+  const period=getTargetUploadPeriod();
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellStyles:true});
+      const parsed=parseTargetWorkbook(wb);
+      const allowedIds=new Set(getUploadBranchOptions().map(b=>String(b.id)));
+      const entries=Object.entries(parsed.targets).filter(([id])=>allowedIds.has(String(id)));
+      if(!entries.length){
+        if(msg){msg.className='alert al-warn';msg.textContent='ไม่พบเป้าสาขาที่อ่านได้จากช่อง "ใช้จริง" หรือสาขาไม่อยู่ในสิทธิ์ของผู้ใช้';}
+        return;
+      }
+      for(const [id,target] of entries){
+        await saveUploadedTargetForBranch(id,period,target,file.name);
+      }
+      loadTargetForPeriod();
+      if(document.getElementById('v-branches')?.classList.contains('on')) renderBranchTable();
+      refreshOverviewOnly();
+      if(CH.branch) drawBranchChart();
+      renderBranchSortList();
+      const total=entries.reduce((s,[,v])=>s+(+v||0),0);
+      if(msg){
+        msg.className='alert al-ok';
+        msg.textContent=`บันทึกเป้า ${fN(entries.length)} สาขา (${period.label}) รวม ${fmt(total)} · พบหัวข้อใช้จริง ${fN(parsed.actualHeaders)} จุด${parsed.skipped.length?' · ข้าม '+fN(parsed.skipped.length)+' ชีต/จุด':''}`;
+      }
+      const input=document.getElementById('target-finp');
+      if(input) input.value='';
+    }catch(err){
+      if(msg){msg.className='alert al-err';msg.textContent='อ่านไฟล์เป้าไม่ได้: '+err.message;}
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 let upLogPage=1; const UPLOG_PAGE_SIZE=20;
 function prevUpLogPage(){if(upLogPage>1){upLogPage--;renderUpLog();}}
 function nextUpLogPage(){upLogPage++;renderUpLog();}
@@ -3673,7 +4208,7 @@ function go(view,el){
   else scheduleRefresh('light');
   if(view==='daily') requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches') requestAnimationFrame(()=>renderBranchTable());
-  if(view==='ranking') requestAnimationFrame(()=>renderBranchSortList());
+  if(view==='ranking') requestAnimationFrame(()=>{updateExportScopeOptions();renderBranchSortList();});
   if(view==='upload') requestAnimationFrame(()=>{applyUploadRoleVisibility();renderOnlineBranchOptions();renderUpLog();});
   if(view==='users') requestAnimationFrame(()=>renderUsers());
 }
@@ -3691,7 +4226,7 @@ function mobGo(view,el){
   else scheduleRefresh('light');
   if(view==='daily')requestAnimationFrame(()=>renderDailyTable());
   if(view==='branches')requestAnimationFrame(()=>renderBranchTable());
-  if(view==='ranking')requestAnimationFrame(()=>renderBranchSortList());
+  if(view==='ranking')requestAnimationFrame(()=>{updateExportScopeOptions();renderBranchSortList();});
   if(view==='upload')requestAnimationFrame(()=>{applyUploadRoleVisibility();renderOnlineBranchOptions();renderUpLog();});
   if(view==='users')requestAnimationFrame(()=>renderUsers());
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
@@ -3994,6 +4529,20 @@ async function loadBranchData(){
       }
       if(branchMonthlyTargets[id]&&branchMonthlyTargets[id][curKey]!==undefined){
         branchTargets[id]=branchMonthlyTargets[id][curKey];
+      }
+      if(d.staffing){
+        if(!branchMonthlyStaffing[id]) branchMonthlyStaffing[id]={};
+        Object.entries(d.staffing).forEach(([key,value])=>{
+          const counts={...emptyStaffCounts(),...(value?.counts||{})};
+          branchMonthlyStaffing[id][key]={
+            counts,
+            days:+value?.days||0,
+            dailyTotal:+value?.dailyTotal||0,
+            monthlyTotal:+value?.monthlyTotal||0,
+            updatedAt:value?.updatedAt||'',
+            by:value?.by||''
+          };
+        });
       }
     });
   }catch(e){console.error('loadBranchData:',e);}
